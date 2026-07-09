@@ -27,10 +27,10 @@ import org.alexmond.jgomplate.functions.Values;
  * <p>
  * The variadic functions ({@code Slice}, {@code Keys}, {@code Values}, {@code Dict},
  * {@code Merge}, {@code Sort}, {@code Index}, {@code Pick}, {@code Omit},
- * {@code Flatten}) are callable since gotmpl4j 1.2.1 unpacks varargs methods. {@code JQ}
- * runs the jq language via jackson-jq (gomplate uses gojq — the same jq semantics). Still
- * missing: {@code GoSlice} and {@code JSONPath} (gomplate's k8s JSONPath dialect has no
- * Java implementation).
+ * {@code Flatten}, {@code GoSlice}) are callable since gotmpl4j 1.2.1 unpacks varargs
+ * methods. {@code JQ} runs the jq language via jackson-jq (gomplate uses gojq — the same
+ * jq semantics). Only {@code JSONPath} is unimplemented: gomplate's k8s JSONPath dialect
+ * has no Java implementation.
  */
 @SuppressWarnings("PMD.MethodNamingConventions") // method names mirror gomplate's Go API
 													// (PascalCase)
@@ -239,6 +239,36 @@ public final class CollNamespace {
 	}
 
 	/**
+	 * gomplate {@code coll.GoSlice item idx…} — Go's {@code slice} builtin: subslice a
+	 * list or string. With no indexes returns the whole thing; {@code low}, {@code low
+	 * high}, or {@code low high max} (the capacity index applies to lists only and does
+	 * not change the visible content). Strings are sliced by character.
+	 * @param item the list or string to slice
+	 * @param indexes 0–3 slice bounds
+	 * @return the subslice
+	 */
+	public Object GoSlice(Object item, Object... indexes) {
+		if (indexes.length > 3) {
+			throw new IllegalArgumentException("slice: too many index arguments");
+		}
+		if (item instanceof String text) {
+			if (indexes.length == 3) {
+				throw new IllegalArgumentException("slice: cannot 3-index slice a string");
+			}
+			int low = (indexes.length >= 1) ? Values.toInt(indexes[0]) : 0;
+			int high = (indexes.length >= 2) ? Values.toInt(indexes[1]) : text.length();
+			return text.substring(low, high);
+		}
+		if (!isListLike(item)) {
+			throw new IllegalArgumentException("slice: can't slice item of type " + typeName(item));
+		}
+		List<Object> list = Values.toList(item);
+		int low = (indexes.length >= 1) ? Values.toInt(indexes[0]) : 0;
+		int high = (indexes.length >= 2) ? Values.toInt(indexes[1]) : list.size();
+		return new ArrayList<>(list.subList(low, high));
+	}
+
+	/**
 	 * gomplate {@code coll.Has}: for a map, whether {@code item} is a key; for a list or
 	 * array, whether {@code item} is an element (by value equality).
 	 * @param in the map, list, or array to test
@@ -443,6 +473,10 @@ public final class CollNamespace {
 
 	private static boolean isListLike(Object o) {
 		return o instanceof Collection || o instanceof Object[];
+	}
+
+	private static String typeName(Object o) {
+		return (o != null) ? o.getClass().getSimpleName() : "nil";
 	}
 
 }

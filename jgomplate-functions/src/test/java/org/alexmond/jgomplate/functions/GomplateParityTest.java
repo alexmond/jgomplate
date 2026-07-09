@@ -648,6 +648,19 @@ class GomplateParityTest {
 			assertEquals("2", render("{{ coll.JQ \".items | length\" (dict \"items\" (list 5 6)) }}"));
 		}
 
+		@Test
+		void goSlice() {
+			// Go's slice builtin: low..high on a list
+			assertEquals("2", render("{{ index (coll.GoSlice (list 1 2 3 4 5) 1 3) 0 }}"));
+			assertEquals("2", render("{{ len (coll.GoSlice (list 1 2 3 4 5) 1 3) }}"));
+			// low-only keeps the tail
+			assertEquals("345", render("{{ range coll.GoSlice (list 1 2 3 4 5) 2 }}{{ . }}{{ end }}"));
+			// no indexes → the whole list
+			assertEquals("abc", render("{{ range coll.GoSlice (list \"a\" \"b\" \"c\") }}{{ . }}{{ end }}"));
+			// strings slice by character
+			assertEquals("el", render("{{ coll.GoSlice \"hello\" 1 3 }}"));
+		}
+
 	}
 
 }
