@@ -18,10 +18,10 @@ import org.alexmond.jgomplate.functions.Values;
  *
  * <p>
  * Output matches gomplate's: {@code ToJSON} emits canonical JSON (map keys sorted, no
- * spaces) and {@code ToYAML} emits yaml with 2-space indent, sorted keys, and no
- * {@code ---} document marker. Seed subset: {@code ToJSONPretty} (needs Go's {@code
- * json.Indent} formatting), {@code TOML}/{@code ToTOML}, the variadic {@code CSV}
- * readers, and {@code CUE} are follow-up work.
+ * spaces), {@code ToJSONPretty} indents that canonical JSON the way Go's {@code
+ * json.Indent} does, and {@code ToYAML} emits yaml with 2-space indent, sorted keys, and
+ * no {@code ---} document marker. Seed subset: {@code TOML}/{@code ToTOML}, the variadic
+ * {@code CSV} readers, and {@code CUE} are follow-up work.
  */
 @SuppressWarnings("PMD.MethodNamingConventions") // method names mirror gomplate's Go API
 													// (PascalCase)
@@ -60,6 +60,18 @@ public final class DataNamespace {
 		return write(JSON_MAPPER, in);
 	}
 
+	/**
+	 * gomplate {@code data.ToJSONPretty indent in} — canonical JSON indented the way Go's
+	 * {@code json.Indent} does: one item per line, {@code indent} per depth level,
+	 * {@code "key": value} spacing, empty containers left compact, no trailing newline.
+	 * @param indent the per-level indent string
+	 * @param in the value to serialise
+	 * @return the indented canonical JSON
+	 */
+	public String ToJSONPretty(Object indent, Object in) {
+		return indentJson(write(JSON_MAPPER, in), Values.str(indent));
+	}
+
 	/** gomplate {@code data.ToYAML in} — yaml with 2-space indent and sorted keys. */
 	public String ToYAML(Object in) {
 		return write(YAML_MAPPER, in);
@@ -92,6 +104,58 @@ public final class DataNamespace {
 		catch (JsonProcessingException ex) {
 			throw new IllegalArgumentException("could not marshal: " + ex.getOriginalMessage(), ex);
 		}
+	}
+
+	/**
+	 * Reformat compact JSON the way Go's {@code json.Indent} does. String literals are
+	 * copied verbatim (escapes respected); structural punctuation drives the layout.
+	 */
+	private static String indentJson(String compact, String indent) {
+		StringBuilder out = new StringBuilder();
+		int depth = 0;
+		boolean inString = false;
+		for (int i = 0; i < compact.length(); i++) {
+			char c = compact.charAt(i);
+			if (inString) {
+				out.append(c);
+				if (c == '\\' && i + 1 < compact.length()) {
+					out.append(compact.charAt(++i));
+				}
+				else if (c == '"') {
+					inString = false;
+				}
+				continue;
+			}
+			char close = (c == '{') ? '}' : ']';
+			if (c == '"') {
+				inString = true;
+				out.append(c);
+			}
+			else if (c == '{' || c == '[') {
+				if (i + 1 < compact.length() && compact.charAt(i + 1) == close) {
+					out.append(c).append(close);
+					i++;
+				}
+				else {
+					depth++;
+					out.append(c).append('\n').append(indent.repeat(depth));
+				}
+			}
+			else if (c == '}' || c == ']') {
+				depth--;
+				out.append('\n').append(indent.repeat(depth)).append(c);
+			}
+			else if (c == ',') {
+				out.append(c).append('\n').append(indent.repeat(depth));
+			}
+			else if (c == ':') {
+				out.append(c).append(' ');
+			}
+			else {
+				out.append(c);
+			}
+		}
+		return out.toString();
 	}
 
 }

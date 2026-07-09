@@ -312,6 +312,21 @@ class GomplateParityTest {
 			assertEquals(expected, render(template));
 		}
 
+		@Test
+		void toJSONPretty() {
+			// Go json.Indent: sorted keys, per-level indent, "key": value, no trailing
+			// newline.
+			assertEquals("{\n  \"a\": 1,\n  \"b\": 2\n}",
+					render("{{ data.ToJSONPretty \"  \" (data.JSON \"{\\\"b\\\":2,\\\"a\\\":1}\") }}"));
+		}
+
+		@Test
+		void toJSONPrettyArrayAndEmpty() {
+			assertEquals("[\n  1,\n  2\n]", render("{{ data.ToJSONPretty \"  \" (data.JSONArray \"[1,2]\") }}"));
+			// an empty object stays compact, like Go's json.Indent
+			assertEquals("{}", render("{{ data.ToJSONPretty \"  \" (data.JSON \"{}\") }}"));
+		}
+
 	}
 
 	/** {@code uuid} namespace. Cases mirror gomplate's internal/funcs/uuid_test.go. */

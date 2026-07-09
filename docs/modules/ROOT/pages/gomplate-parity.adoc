@@ -51,8 +51,8 @@ Status legend: ✅ complete · 🟡 partial (some methods) · ⬜ not started.
 
 | `data`
 | 🟡 Partial
-| 6 / ~13
-| `JSON JSONArray YAML YAMLArray ToJSON ToYAML` (via Jackson). `ToJSON` is canonical (sorted keys, compact); `ToYAML` uses 2-space indent, sorted keys, no `---` marker. Missing `ToJSONPretty` (needs Go's `json.Indent` layout), `TOML`/`ToTOML`, the variadic `CSV`/`CSVByRow`/`CSVByColumn`/`ToCSV`, and `CUE`.
+| 7 / ~13
+| `JSON JSONArray YAML YAMLArray ToJSON ToJSONPretty ToYAML` (via Jackson). `ToJSON` is canonical (sorted keys, compact); `ToJSONPretty` indents that like Go's `json.Indent`; `ToYAML` uses 2-space indent, sorted keys, no `---` marker. Missing `TOML`/`ToTOML`, the variadic `CSV`/`CSVByRow`/`CSVByColumn`/`ToCSV`, and `CUE`.
 
 | `base64`
 | ✅ Complete
@@ -280,8 +280,9 @@ without the trailing hash name) so the common call shapes work.
 | `JSONArray`  | ✅ | `data.JSONArray in` → list
 | `YAML`       | ✅ | `data.YAML in` → map
 | `YAMLArray`  | ✅ | `data.YAMLArray in` → list
-| `ToJSON`     | ✅ | `data.ToJSON in` (canonical: sorted keys, compact)
-| `ToYAML`     | ✅ | `data.ToYAML in` (2-space indent, sorted keys)
+| `ToJSON`       | ✅ | `data.ToJSON in` (canonical: sorted keys, compact)
+| `ToJSONPretty` | ✅ | `data.ToJSONPretty indent in` (Go `json.Indent` layout)
+| `ToYAML`       | ✅ | `data.ToYAML in` (2-space indent, sorted keys)
 |===
 
 == Datasource parity
