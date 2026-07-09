@@ -192,6 +192,54 @@ class GomplateParityTest {
 			assertEquals(expected, render(template));
 		}
 
+		@ParameterizedTest
+		@CsvSource(delimiter = '|', value = {
+				// case conversions — vectors from gomplate strings.TestCaseFuncs
+				"{{ strings.SnakeCase \"Hello, World!\" }} | Hello_world",
+				"{{ strings.KebabCase \"Hello, World!\" }} | Hello-world",
+				"{{ strings.CamelCase \"Hello, World!\" }} | HelloWorld",
+				"{{ strings.SnakeCase \"foo  bar\" }}      | foo_bar",
+				"{{ strings.CamelCase \"foo  bar\" }}      | fooBar",
+				"{{ strings.CamelCase \"grüne Straße\" }}  | grüneStraße",
+				// Title upshifts word-initials without lowering the rest (NoLower)
+				"{{ strings.Title \"hello world\" }}       | Hello World",
+				"{{ strings.Title \"hello WORLD\" }}       | Hello WORLD",
+				// RuneCount concatenates its args, then counts runes
+				"{{ strings.RuneCount \"hello\" }}         | 5", "{{ strings.RuneCount \"a\" \"bc\" }}     | 3",
+				"{{ strings.RuneCount \"héllo\" }}         | 5",
+				// Quote — Go %q double-quoting
+				"{{ strings.Quote \"foo\" }}               | \"foo\"",
+				// Indent: 2-arg (indent string OR width int) and 3-arg (width, indent)
+				"{{ strings.Indent \"  \" \"foo\" }}       | '  foo'",
+				"{{ strings.Indent 2 \"foo\" }}            | '  foo'",
+				"{{ strings.Indent 2 \"-\" \"foo\" }}      | --foo" })
+		void caseQuoteIndent(String template, String expected) {
+			assertEquals(expected, render(template));
+		}
+
+		@Test
+		void indentMultiline() {
+			// gomplate strings.TestIndent: each line prefixed, blank lines untouched
+			assertEquals("  hello\n  world\n  !",
+					render("{{ strings.Indent 1 \"  \" .s }}", Map.of("s", "hello\nworld\n!")));
+			assertEquals("  foo\n", render("{{ strings.Indent 1 \"  \" .s }}", Map.of("s", "foo\n")));
+		}
+
+		@Test
+		void shellQuote() {
+			// vectors from gomplate strings.TestShellQuote
+			assertEquals("''", render("{{ strings.ShellQuote \"\" }}"));
+			assertEquals("'foo'", render("{{ strings.ShellQuote \"foo\" }}"));
+			assertEquals("'hello \"world\"'", render("{{ strings.ShellQuote \"hello \\\"world\\\"\" }}"));
+			assertEquals("'it'\"'\"'s its'", render("{{ strings.ShellQuote \"it's its\" }}"));
+		}
+
+		@Test
+		void squote() {
+			assertEquals("'foo'", render("{{ strings.Squote \"foo\" }}"));
+			assertEquals("'it''s'", render("{{ strings.Squote \"it's\" }}"));
+		}
+
 	}
 
 	/** {@code math} namespace. Cases mirror gomplate's internal/funcs/math_test.go. */

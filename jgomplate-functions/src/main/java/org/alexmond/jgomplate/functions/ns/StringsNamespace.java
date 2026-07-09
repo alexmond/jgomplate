@@ -1,8 +1,10 @@
 package org.alexmond.jgomplate.functions.ns;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 import org.alexmond.jgomplate.functions.Values;
 
@@ -19,15 +21,18 @@ import org.alexmond.jgomplate.functions.Values;
  * that order exactly.
  *
  * <p>
- * Seed subset of the full ~30-function gomplate {@code strings} namespace. Still missing:
- * the case-format helpers ({@code CamelCase}/{@code SnakeCase}/{@code KebabCase}/
- * {@code Slug}), {@code Title} (needs Unicode title-casing), the quoting helpers
- * ({@code Quote}/{@code Squote}/{@code ShellQuote}), and the variadic ones
- * ({@code Indent}/{@code WordWrap}/{@code RuneCount}/{@code Abbrev}).
+ * Still missing from the full gomplate {@code strings} namespace: {@code Slug} (needs a
+ * transliterating slug library), and {@code WordWrap}/{@code Abbrev} (need the exact
+ * {@code goutils} wrapping/abbreviation algorithms). {@code Trunc}/{@code Split} are
+ * character-based rather than byte-based.
  */
 @SuppressWarnings("PMD.MethodNamingConventions") // method names mirror gomplate's Go API
 													// (PascalCase)
 public final class StringsNamespace {
+
+	private static final Pattern NON_ALPHA_NUM = Pattern.compile("[^\\p{L}\\p{N}]+");
+
+	private static final Pattern SPACES = Pattern.compile("\\s+");
 
 	public String ToUpper(Object s) {
 		return Values.str(s).toUpperCase(Locale.ROOT);
@@ -113,6 +118,181 @@ public final class StringsNamespace {
 	 */
 	public List<String> SplitN(Object sep, Object n, Object s) {
 		return splitLiteral(Values.str(s), Values.str(sep), Values.toInt(n));
+	}
+
+	/**
+	 * gomplate {@code strings.Indent [width] [indent] s} — prefix each line of {@code s}
+	 * with {@code indent} repeated {@code width} times. Defaults: {@code width} 1,
+	 * {@code indent} a single space. The last argument is always the input string.
+	 */
+	public String Indent(Object... args) {
+		if (args.length == 0 || args.length > 3) {
+			throw new IllegalArgumentException("expected 1, 2, or 3 args, got " + args.length);
+		}
+		String indent = " ";
+		int width = 1;
+		if (args.length == 2) {
+			if (args[0] instanceof String str) {
+				indent = str;
+			}
+			else {
+				width = Values.toInt(args[0]);
+			}
+		}
+		else if (args.length == 3) {
+			width = Values.toInt(args[0]);
+			indent = Values.toString(args[1]);
+		}
+		return indentString(width, indent, Values.toString(args[args.length - 1]));
+	}
+
+	/**
+	 * gomplate {@code strings.RuneCount in…} — count of Unicode runes across all args.
+	 */
+	public int RuneCount(Object... args) {
+		StringBuilder sb = new StringBuilder();
+		for (Object arg : args) {
+			sb.append(Values.toString(arg));
+		}
+		return (int) sb.toString().codePoints().count();
+	}
+
+	/**
+	 * gomplate {@code strings.Title s} — upshift the first letter of each word without
+	 * lowering the rest (Go {@code cases.Title} with {@code NoLower}).
+	 */
+	public String Title(Object s) {
+		String text = Values.toString(s);
+		StringBuilder out = new StringBuilder(text.length());
+		boolean startOfWord = true;
+		for (int i = 0; i < text.length(); i++) {
+			char c = text.charAt(i);
+			if (Character.isLetterOrDigit(c)) {
+				out.append(startOfWord ? Character.toTitleCase(c) : c);
+				startOfWord = false;
+			}
+			else {
+				out.append(c);
+				startOfWord = true;
+			}
+		}
+		return out.toString();
+	}
+
+	/**
+	 * gomplate {@code strings.SnakeCase in} — e.g. {@code "Hello, World!"} →
+	 * {@code Hello_world}.
+	 */
+	public String SnakeCase(Object in) {
+		return SPACES.matcher(casePrepare(Values.toString(in))).replaceAll("_");
+	}
+
+	/**
+	 * gomplate {@code strings.KebabCase in} — e.g. {@code "Hello, World!"} →
+	 * {@code Hello-world}.
+	 */
+	public String KebabCase(Object in) {
+		return SPACES.matcher(casePrepare(Values.toString(in))).replaceAll("-");
+	}
+
+	/**
+	 * gomplate {@code strings.CamelCase in} — e.g. {@code "Hello, World!"} →
+	 * {@code HelloWorld}.
+	 */
+	public String CamelCase(Object in) {
+		String input = Values.toString(in).strip();
+		if (input.isEmpty()) {
+			return "";
+		}
+		String titled = Title(input);
+		// restore the first character's original case, as gomplate does
+		titled = input.charAt(0) + titled.substring(1);
+		return NON_ALPHA_NUM.matcher(titled).replaceAll("");
+	}
+
+	/**
+	 * gomplate {@code strings.Quote in} — a double-quoted Go string literal ({@code %q}).
+	 */
+	public String Quote(Object in) {
+		String s = Values.toString(in);
+		StringBuilder b = new StringBuilder(s.length() + 2);
+		b.append('"');
+		for (int i = 0; i < s.length(); i++) {
+			char c = s.charAt(i);
+			switch (c) {
+				case '"' -> b.append("\\\"");
+				case '\\' -> b.append("\\\\");
+				case '\n' -> b.append("\\n");
+				case '\t' -> b.append("\\t");
+				case '\r' -> b.append("\\r");
+				default -> b.append(c);
+			}
+		}
+		b.append('"');
+		return b.toString();
+	}
+
+	/**
+	 * gomplate {@code strings.Squote in} — a single-quoted literal; embedded {@code '}
+	 * doubled.
+	 */
+	public String Squote(Object in) {
+		return "'" + Values.toString(in).replace("'", "''") + "'";
+	}
+
+	/**
+	 * gomplate {@code strings.ShellQuote in} — a POSIX shell literal. A list is quoted
+	 * element-wise and space-joined.
+	 */
+	public String ShellQuote(Object in) {
+		if (in instanceof Collection<?> || in instanceof Object[]) {
+			StringBuilder sb = new StringBuilder();
+			List<Object> items = Values.toList(in);
+			for (int i = 0; i < items.size(); i++) {
+				if (i > 0) {
+					sb.append(' ');
+				}
+				sb.append(shellQuoteOne(Values.toString(items.get(i))));
+			}
+			return sb.toString();
+		}
+		return shellQuoteOne(Values.toString(in));
+	}
+
+	private static String shellQuoteOne(String s) {
+		return "'" + s.replace("'", "'\"'\"'") + "'";
+	}
+
+	private static String casePrepare(String raw) {
+		String in = raw.strip();
+		if (in.isEmpty()) {
+			return "";
+		}
+		String s = in.toLowerCase(Locale.ROOT);
+		// restore the original first character (gomplate keeps its case)
+		s = in.charAt(0) + s.substring(1);
+		return NON_ALPHA_NUM.matcher(s).replaceAll(" ").strip();
+	}
+
+	private static String indentString(int width, String indent, String s) {
+		if (width <= 0) {
+			throw new IllegalArgumentException("width must be > 0");
+		}
+		if (indent.contains("\n")) {
+			throw new IllegalArgumentException("indent must not contain '\\n'");
+		}
+		String prefix = (width > 1) ? indent.repeat(width) : indent;
+		StringBuilder res = new StringBuilder();
+		boolean bol = true;
+		for (int i = 0; i < s.length(); i++) {
+			char c = s.charAt(i);
+			if (bol && c != '\n') {
+				res.append(prefix);
+			}
+			res.append(c);
+			bol = c == '\n';
+		}
+		return res.toString();
 	}
 
 	private static String trimSet(String text, String cutset, boolean left, boolean right) {
