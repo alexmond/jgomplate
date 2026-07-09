@@ -376,7 +376,7 @@ datasource, context, and directory machinery are follow-up work.
 | `-c, --context`       | ✅ `-c/--context` | `alias=URL` bound to `.`; alias `.` merges into the root. Local file schemes (json/yaml); also the `context:` config key.
 | `--input-dir` / `--output-dir` | ⬜ | No directory-tree rendering.
 | `--exec-pipe`         | ⬜ | Not implemented.
-| `-t, --template`      | ⬜ | Nested/partial template registration not implemented.
+| `-t, --template`      | ✅ `-t/--template` | `name=URL` registered as a partial, invoked via `{{ template "name" . }}`. Local file schemes; also the `templates:` config key.
 | `--left-delim` / `--right-delim` | ⬜ | Custom delimiters not exposed (blocked on the engine).
 | `--plugin`            | ⬜ | Config-file `plugins:` key parses; external-command execution not implemented.
 | `--missing-key`       | ✅ `--missing-key` | `error` (default, matching gomplate), `zero`, `default`, `invalid`; also the `missingKey:` config key.

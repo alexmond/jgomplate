@@ -25,4 +25,11 @@ class GomplateEngineTest {
 		assertEquals("HELLO", engine.render("{{ \"hello\" | upper }}"));
 	}
 
+	@Test
+	void rendersNamedPartialTemplate() {
+		String out = engine.render("[{{ template \"greeting\" .name }}]", Map.of("name", "alex"), null, null,
+				Map.of("greeting", "Hi {{ . }}"));
+		assertEquals("[Hi alex]", out);
+	}
+
 }
