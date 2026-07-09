@@ -90,9 +90,9 @@ Status legend: ✅ complete · 🟡 partial (some methods) · ⬜ not started.
 | `ASCII Alpha AlphaNum Number String Item`.
 
 | `env`
-| ⬜ Not started
-| 0 / 2
-| `Getenv ExpandEnv`.
+| ✅ Complete
+| 4 / 4
+| `Env Getenv ExpandEnv HasEnv`. gomplate's `<KEY>_FILE` indirection convention is the one behaviour not replicated.
 
 | `file`
 | ⬜ Not started
@@ -271,7 +271,18 @@ without the trailing hash name) so the common call shapes work.
 | `V1`      | ⬜ | `uuid.V1` — no JVM time-based UUID generator
 |===
 
-.`data` (6 / ~13)
+.`env` (4 / 4 — complete)
+[cols="1,1,3"]
+|===
+| Method | Status | gomplate signature
+
+| `Env`       | ✅ | `env.Env` → map of all vars
+| `Getenv`    | ✅ | `env.Getenv key [default]` (fixed 1- and 2-arg overloads)
+| `HasEnv`    | ✅ | `env.HasEnv key`
+| `ExpandEnv` | ✅ | `env.ExpandEnv s` (`$VAR` / `${VAR}`)
+|===
+
+.`data` (7 / ~13)
 [cols="1,1,3"]
 |===
 | Method | Status | gomplate signature

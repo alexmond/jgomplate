@@ -290,6 +290,34 @@ class GomplateParityTest {
 
 	}
 
+	/**
+	 * {@code env} namespace. JGOMPLATE_TEST_VAR=hello is set for the test JVM (surefire
+	 * config) so the value-present path is deterministic; the unset/default paths need no
+	 * setup.
+	 */
+	@Nested
+	class Env {
+
+		@ParameterizedTest
+		@CsvSource(delimiter = '|',
+				value = { "{{ env.Getenv \"JGOMPLATE_TEST_VAR\" }}          | hello",
+						"{{ env.Getenv \"JGOMPLATE_UNSET_XYZ\" }}         | ''",
+						"{{ env.Getenv \"JGOMPLATE_UNSET_XYZ\" \"fb\" }}  | fb",
+						"{{ env.Getenv \"JGOMPLATE_TEST_VAR\" \"fb\" }}   | hello",
+						"{{ env.HasEnv \"JGOMPLATE_TEST_VAR\" }}          | true",
+						"{{ env.HasEnv \"JGOMPLATE_UNSET_XYZ\" }}         | false",
+						"{{ index (env.Env) \"JGOMPLATE_TEST_VAR\" }}     | hello",
+						// ExpandEnv: $VAR and ${VAR}; unset expands to empty
+						"{{ env.ExpandEnv \"v=$JGOMPLATE_TEST_VAR!\" }}   | v=hello!",
+						"{{ env.ExpandEnv \"v=${JGOMPLATE_TEST_VAR}!\" }} | v=hello!",
+						"{{ env.ExpandEnv \"x=$JGOMPLATE_UNSET_XYZ!\" }}  | x=!",
+						"{{ env.ExpandEnv \"no vars here\" }}             | no vars here" })
+		void envLookup(String template, String expected) {
+			assertEquals(expected, render(template));
+		}
+
+	}
+
 	/** {@code data} namespace (structured-data parse/serialise). */
 	@Nested
 	class Data {
