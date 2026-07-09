@@ -1,8 +1,6 @@
 package org.alexmond.jgomplate.cli;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Map;
+import java.util.List;
 import java.util.concurrent.Callable;
 
 import picocli.CommandLine.Command;
@@ -10,55 +8,77 @@ import picocli.CommandLine.Option;
 
 import org.springframework.stereotype.Component;
 
-import org.alexmond.jgomplate.core.GomplateEngine;
+import org.alexmond.jgomplate.core.GomplateRunner;
+import org.alexmond.jgomplate.core.config.ConfigLoader;
+import org.alexmond.jgomplate.core.config.GomplateConfig;
 
 /**
- * The {@code jgomplate} render command: reads a template (from {@code --file} or the
- * inline {@code --in} string), renders it through the {@link GomplateEngine}, and writes
- * the result to {@code --out} or standard output.
+ * The {@code jgomplate} render command. Builds a {@link GomplateConfig} from the flags
+ * the user actually passed, overlays it onto the {@code .gomplate.yaml} config file (CLI
+ * wins), and renders through the {@link GomplateRunner}.
  *
  * <p>
- * A seed subset of gomplate's CLI surface — datasources ({@code -d}), context
- * ({@code -c}), and directory input ({@code --input-dir}) are follow-up work.
+ * Seed CLI surface (issue #7): inline {@code -i}, template files {@code -f} and output
+ * files {@code -o} (repeatable, {@code -} = stdin/stdout), plus {@code --config},
+ * {@code -V} and {@code --experimental}. Datasources ({@code -d}), context ({@code -c}),
+ * nested templates ({@code -t}), missing-key handling and directory input are wired by
+ * follow-up issues.
  */
 @Component
 @Command(name = "jgomplate", mixinStandardHelpOptions = true, description = "Render gomplate/Go templates on the JVM.")
 public class RenderCommand implements Callable<Integer> {
 
-	@Option(names = { "-f", "--file" }, description = "Template file to render.")
-	private Path file;
+	@Option(names = { "-f", "--file" }, description = "Template file to render ('-' = stdin). Repeatable.")
+	private List<String> files;
 
 	@Option(names = { "-i", "--in" }, description = "Inline template string to render.")
 	private String inline;
 
-	@Option(names = { "-o", "--out" }, description = "Output file (defaults to stdout).")
-	private Path out;
+	@Option(names = { "-o", "--out" }, description = "Output file ('-' = stdout). Repeatable, paired with --file.")
+	private List<String> outputs;
 
-	private final GomplateEngine engine = new GomplateEngine();
+	@Option(names = { "--config" }, description = "Config file (default: .gomplate.yaml).")
+	private String config;
+
+	@Option(names = { "-V", "--verbose" }, description = "Verbose output.")
+	private Boolean verbose;
+
+	@Option(names = { "--experimental" }, description = "Enable experimental features.")
+	private Boolean experimental;
+
+	private final ConfigLoader configLoader = new ConfigLoader();
+
+	private final GomplateRunner runner = new GomplateRunner();
 
 	@Override
 	public Integer call() throws Exception {
-		String templateText;
-		if (this.inline != null) {
-			templateText = this.inline;
+		GomplateConfig fileConfig = this.configLoader.load(this.config);
+		GomplateConfig merged = fileConfig.mergeFrom(cliConfig());
+
+		if (Boolean.TRUE.equals(this.verbose)) {
+			System.err.println(
+					"jgomplate: config=" + ((this.config != null) ? this.config : ConfigLoader.DEFAULT_CONFIG_FILE));
 		}
-		else if (this.file != null) {
-			templateText = Files.readString(this.file);
-		}
-		else {
-			System.err.println("Provide a template with --file <path> or --in <string>.");
+
+		boolean noInput = merged.getIn() == null
+				&& (merged.getInputFiles() == null || merged.getInputFiles().isEmpty());
+		if (noInput && System.console() != null) {
+			System.err.println("Provide a template with --file <path>, --in <string>, or on stdin.");
 			return 2;
 		}
 
-		String rendered = this.engine.render(templateText, Map.of());
-
-		if (this.out != null) {
-			Files.writeString(this.out, rendered);
-		}
-		else {
-			System.out.print(rendered);
-		}
+		this.runner.run(merged, System.in, System.out);
 		return 0;
+	}
+
+	/** Assemble a config from the flags actually supplied ({@code null} = not set). */
+	private GomplateConfig cliConfig() {
+		GomplateConfig cli = new GomplateConfig();
+		cli.setIn(this.inline);
+		cli.setInputFiles(this.files);
+		cli.setOutputFiles(this.outputs);
+		cli.setExperimental(this.experimental);
+		return cli;
 	}
 
 }
