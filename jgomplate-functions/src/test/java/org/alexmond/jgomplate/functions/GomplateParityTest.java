@@ -160,6 +160,39 @@ class GomplateParityTest {
 
 	}
 
+	/** {@code math} namespace. Cases mirror gomplate's internal/funcs/math_test.go. */
+	@Nested
+	class Math {
+
+		@ParameterizedTest
+		@CsvSource(delimiter = '|',
+				value = { "{{ math.IsInt 42 }}        | true", "{{ math.IsInt 3.14 }}      | false",
+						"{{ math.IsInt \"42\" }}     | true", "{{ math.IsInt \"abc\" }}    | false",
+						"{{ math.IsFloat 3.14 }}     | true", "{{ math.IsFloat 42 }}       | false",
+						"{{ math.IsFloat \"3.14\" }} | true", "{{ math.IsFloat \"42\" }}   | false",
+						"{{ math.IsNum 42 }}         | true", "{{ math.IsNum 3.14 }}       | true",
+						"{{ math.IsNum \"abc\" }}    | false" })
+		void predicates(String template, String expected) {
+			assertEquals(expected, render(template));
+		}
+
+		@ParameterizedTest
+		@CsvSource(delimiter = '|', value = {
+				// Abs/Sub/Pow keep integer inputs integral; Div is always float
+				"{{ math.Abs -5 }}    | 5", "{{ math.Abs -5.5 }}  | 5.5", "{{ math.Abs 0 }}     | 0",
+				"{{ math.Sub 1 1 }}   | 0", "{{ math.Sub -5 5 }}  | -10", "{{ math.Sub 5 2.5 }} | 2.5",
+				"{{ math.Div 1 2 }}   | 0.5", "{{ math.Div -5 5 }}  | -1", "{{ math.Div 10 4 }}  | 2.5",
+				"{{ math.Rem 5 3 }}   | 2", "{{ math.Rem 10 3 }}  | 1", "{{ math.Pow 2 2 }}   | 4",
+				"{{ math.Pow 2 10 }}  | 1024", "{{ math.Pow 1.5 2 }} | 2.25",
+				// Ceil/Floor round toward +/-inf; Round is half away from zero
+				"{{ math.Ceil 4.99 }} | 5", "{{ math.Ceil 4.01 }} | 5", "{{ math.Floor 4.99 }}| 4",
+				"{{ math.Round 4.99 }}| 5", "{{ math.Round 4.4 }} | 4", "{{ math.Round 2.5 }} | 3" })
+		void arithmetic(String template, String expected) {
+			assertEquals(expected, render(template));
+		}
+
+	}
+
 	/** {@code coll} namespace. Cases mirror gomplate's coll/coll_test.go. */
 	@Nested
 	class Coll {

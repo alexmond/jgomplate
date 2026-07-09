@@ -8,6 +8,7 @@ import org.alexmond.gotmpl4j.FunctionProvider;
 import org.alexmond.gotmpl4j.GoTemplate;
 import org.alexmond.jgomplate.functions.ns.CollNamespace;
 import org.alexmond.jgomplate.functions.ns.ConvNamespace;
+import org.alexmond.jgomplate.functions.ns.MathNamespace;
 import org.alexmond.jgomplate.functions.ns.StringsNamespace;
 
 /**
@@ -35,12 +36,15 @@ public class GomplateFunctionProvider implements FunctionProvider {
 
 	private static final CollNamespace COLL = new CollNamespace();
 
+	private static final MathNamespace MATH = new MathNamespace();
+
 	@Override
 	public Map<String, Function> getFunctions(GoTemplate template) {
 		Map<String, Function> functions = new HashMap<>();
 		functions.put("strings", (args) -> STRINGS);
 		functions.put("conv", (args) -> CONV);
 		functions.put("coll", (args) -> COLL);
+		functions.put("math", (args) -> MATH);
 		return functions;
 	}
 

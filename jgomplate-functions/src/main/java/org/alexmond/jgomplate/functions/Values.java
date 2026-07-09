@@ -52,6 +52,46 @@ public final class Values {
 	}
 
 	/**
+	 * Coerce to a {@code long} the way gomplate's {@code conv.ToInt64} does: booleans map
+	 * to {@code 1}/{@code 0}, numbers truncate, and strings parse in base 0 (so
+	 * {@code 0x} hex and leading-{@code 0} octal are honoured).
+	 * @param value the value to coerce
+	 * @return the {@code long} value
+	 */
+	public static long toLong(Object value) {
+		if (value instanceof Boolean bool) {
+			return bool ? 1L : 0L;
+		}
+		if (value instanceof Number number) {
+			return number.longValue();
+		}
+		return Long.decode(str(value).trim());
+	}
+
+	/**
+	 * Coerce to a {@code double} the way gomplate's {@code conv.ToFloat64} does: booleans
+	 * map to {@code 1}/{@code 0}, numbers widen, and strings parse as an integer (base 0)
+	 * or a float.
+	 * @param value the value to coerce
+	 * @return the {@code double} value
+	 */
+	public static double toDouble(Object value) {
+		if (value instanceof Boolean bool) {
+			return bool ? 1.0d : 0.0d;
+		}
+		if (value instanceof Number number) {
+			return number.doubleValue();
+		}
+		String text = str(value).trim();
+		try {
+			return Long.decode(text);
+		}
+		catch (NumberFormatException ignored) {
+			return Double.parseDouble(text);
+		}
+	}
+
+	/**
 	 * Coerce to a {@code boolean} using gomplate's {@code conv.ToBool} rules: real
 	 * booleans pass through; a number is true only when it equals {@code 1}; a string is
 	 * true only when it is (case-insensitively) {@code "1"}, {@code "t"}, {@code "true"},

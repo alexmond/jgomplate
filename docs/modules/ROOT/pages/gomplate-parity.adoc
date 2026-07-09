@@ -60,9 +60,9 @@ Status legend: ✅ complete · 🟡 partial (some methods) · ⬜ not started.
 | `Encode Decode DecodeBytes`. Sprig's `b64enc`/`b64dec` are available as a stopgap.
 
 | `math`
-| ⬜ Not started
-| 0 / ~16
-| `Add Sub Mul Div Rem Pow Abs Ceil Floor Round Max Min Seq IsInt IsFloat IsNum`. Sprig math is available non-namespaced.
+| 🟡 Partial
+| 11 / ~16
+| `Abs Sub Div Rem Pow Ceil Floor Round IsInt IsFloat IsNum`. The remaining five — `Add Mul Max Min Seq` — are *variadic* and blocked by the varargs-method gap (see <<known-limitations>>); use Sprig's `add`/`mul`/`max`/`min` until then.
 
 | `time`
 | ⬜ Not started
@@ -187,6 +187,34 @@ The seed's original `Trim` had the arguments reversed; it now matches gomplate.
 | `Reverse` | ✅ | `coll.Reverse list`
 | `Slice`   | 🟡 | `coll.Slice items...` — implemented but *not callable from templates* (variadic; see <<known-limitations>>). Use Sprig's `list` instead.
 |===
+
+.`math` (11 / ~16)
+[cols="1,1,3"]
+|===
+| Method | Status | gomplate signature
+
+| `IsInt`   | ✅ | `math.IsInt n`
+| `IsFloat` | ✅ | `math.IsFloat n`
+| `IsNum`   | ✅ | `math.IsNum n`
+| `Abs`     | ✅ | `math.Abs n` (integral in → integral out)
+| `Sub`     | ✅ | `math.Sub a b`
+| `Div`     | ✅ | `math.Div a b` (always float; errors on ÷0)
+| `Rem`     | ✅ | `math.Rem a b` (integer remainder)
+| `Pow`     | ✅ | `math.Pow a b`
+| `Ceil`    | ✅ | `math.Ceil n`
+| `Floor`   | ✅ | `math.Floor n`
+| `Round`   | ✅ | `math.Round n` (half away from zero)
+| `Add`     | 🟡 | `math.Add n...` — variadic, *not callable* (see <<known-limitations>>)
+| `Mul`     | 🟡 | `math.Mul n...` — variadic, *not callable*
+| `Max`     | 🟡 | `math.Max a n...` — variadic, *not callable*
+| `Min`     | 🟡 | `math.Min a n...` — variadic, *not callable*
+| `Seq`     | 🟡 | `math.Seq n...` — variadic, *not callable*
+|===
+
+NOTE: gomplate preserves numeric type — `Abs`/`Sub`/`Pow` stay integral for
+integral inputs, `Div` is always floating-point, `Rem` is integer. jgomplate
+returns whole-valued results as an integer so they render without a trailing
+`.0`, matching Go's rendering of an integral `float64`.
 
 == Datasource parity
 
