@@ -34,6 +34,13 @@ public class GomplateConfig {
 	/** Glob patterns to exclude when rendering a directory ({@code --exclude}). */
 	private List<String> excludes;
 
+	/**
+	 * Glob patterns to include when rendering a directory ({@code --include}); when set,
+	 * only matching files are processed. gomplate keeps this CLI-only sugar; it is
+	 * surfaced here so the directory renderer has a single config-driven entry point.
+	 */
+	private List<String> includes;
+
 	/** Globs copied verbatim (not rendered) during directory rendering. */
 	private List<String> excludeProcessing;
 
@@ -120,6 +127,9 @@ public class GomplateConfig {
 		}
 		if (other.excludes != null) {
 			this.excludes = other.excludes;
+		}
+		if (other.includes != null) {
+			this.includes = other.includes;
 		}
 		if (other.excludeProcessing != null) {
 			this.excludeProcessing = other.excludeProcessing;
