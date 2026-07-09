@@ -123,15 +123,38 @@ class GomplateParityTest {
 				"{{ strings.TrimSpace \"  go  \" }}                          | go",
 				// \\t \\n are escapes for the Go template lexer, not Java
 				"{{ strings.TrimSpace \"\\t\\nfoo\\n\\t\" }}                 | foo",
-				// Trim input cutset — strip leading/trailing runes in the cutset
-				"{{ strings.Trim \"$$foo$$\" \"$\" }}                        | foo",
-				"{{ strings.Trim \"xxhixx\" \"x\" }}                         | hi",
-				"{{ strings.Repeat 0 \"ab\" }}                               | ''",
-				"{{ strings.Repeat 3 \"ab\" }}                               | ababab",
 				// Contains arg order: substr input
 				"{{ strings.Contains \"ell\" \"hello\" }}                    | true",
-				"{{ strings.Contains \"z\" \"hello\" }}                      | false" })
+				"{{ strings.Contains \"z\" \"hello\" }}                      | false",
+				"{{ strings.HasPrefix \"foo\" \"foobar\" }}                  | true",
+				"{{ strings.HasPrefix \"bar\" \"foobar\" }}                  | false",
+				"{{ strings.HasSuffix \"bar\" \"foobar\" }}                  | true",
+				"{{ strings.HasSuffix \"foo\" \"foobar\" }}                  | false",
+				"{{ strings.Repeat 0 \"ab\" }}                               | ''",
+				"{{ strings.Repeat 3 \"ab\" }}                               | ababab",
+				// Trim/TrimLeft/TrimRight arg order: cutset input
+				"{{ strings.Trim \"$\" \"$$foo$$\" }}                        | foo",
+				"{{ strings.TrimLeft \"-_\" \"-_fooBAR\" }}                  | fooBAR",
+				"{{ strings.TrimRight \"-_\" \"fooBAR-_\" }}                 | fooBAR",
+				// TrimPrefix/TrimSuffix arg order: affix input
+				"{{ strings.TrimPrefix \"Foo\" \"FooBar\" }}                 | Bar",
+				"{{ strings.TrimSuffix \"Bar\" \"FooBar\" }}                 | Foo",
+				// Trunc length input — first length chars; <0 keeps the whole string
+				"{{ strings.Trunc 3 \"123456789\" }}                        | 123",
+				"{{ strings.Trunc -1 \"hello, world\" }}                     | hello, world",
+				"{{ strings.Trunc 5 \"\" }}                                  | ''" })
 		void strings(String template, String expected) {
+			assertEquals(expected, render(template));
+		}
+
+		@ParameterizedTest
+		@CsvSource(delimiter = '|', value = {
+				// Split/SplitN arg order: sep [n] input; literal (non-regex) split
+				"{{ len (strings.Split \",\" \"a,b,c\") }}          | 3",
+				"{{ index (strings.Split \",\" \"a,b,c\") 1 }}      | b",
+				"{{ len (strings.SplitN \",\" 2 \"a,b,c\") }}       | 2",
+				"{{ index (strings.SplitN \",\" 2 \"a,b,c\") 1 }}   | b,c" })
+		void split(String template, String expected) {
 			assertEquals(expected, render(template));
 		}
 

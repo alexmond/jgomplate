@@ -36,8 +36,8 @@ Status legend: ✅ complete · 🟡 partial (some methods) · ⬜ not started.
 
 | `strings`
 | 🟡 Partial
-| 7 / ~30
-| `ToUpper ToLower Trim TrimSpace Repeat ReplaceAll Contains`. Missing the case-format helpers (`CamelCase SnakeCase KebabCase Slug`), the trim variants (`TrimPrefix/Suffix/Left/Right`), `Split/SplitN`, `Indent Trunc Abbrev WordWrap Quote Squote ShellQuote Title Sort RuneCount Initials HasPrefix HasSuffix`.
+| 16 / ~30
+| `ToUpper ToLower Trim TrimLeft TrimRight TrimPrefix TrimSuffix TrimSpace Repeat ReplaceAll Contains HasPrefix HasSuffix Split SplitN Trunc`. Missing the case-format helpers (`CamelCase SnakeCase KebabCase Slug`), `Title` (needs Unicode title-casing), the quoting helpers (`Quote Squote ShellQuote`), and the variadic ones (`Indent WordWrap RuneCount Abbrev`, plus `Sort Initials`).
 
 | `conv`
 | 🟡 Partial
@@ -140,7 +140,7 @@ Status legend: ✅ complete · 🟡 partial (some methods) · ⬜ not started.
 The three partially-implemented namespaces, method by method. ✅ = present and
 faithful to gomplate's signature; blank row group = not yet ported.
 
-.`strings` (7 / ~30)
+.`strings` (16 / ~30)
 [cols="1,1,3"]
 |===
 | Method | Status | gomplate signature
@@ -148,11 +148,24 @@ faithful to gomplate's signature; blank row group = not yet ported.
 | `ToUpper`     | ✅ | `strings.ToUpper s`
 | `ToLower`     | ✅ | `strings.ToLower s`
 | `TrimSpace`   | ✅ | `strings.TrimSpace s`
-| `Trim`        | ✅ | `strings.Trim s cutset`
+| `Trim`        | ✅ | `strings.Trim cutset s`
+| `TrimLeft`    | ✅ | `strings.TrimLeft cutset s`
+| `TrimRight`   | ✅ | `strings.TrimRight cutset s`
+| `TrimPrefix`  | ✅ | `strings.TrimPrefix prefix s`
+| `TrimSuffix`  | ✅ | `strings.TrimSuffix suffix s`
 | `Repeat`      | ✅ | `strings.Repeat count s`
 | `ReplaceAll`  | ✅ | `strings.ReplaceAll old new s`
 | `Contains`    | ✅ | `strings.Contains substr s`
+| `HasPrefix`   | ✅ | `strings.HasPrefix prefix s`
+| `HasSuffix`   | ✅ | `strings.HasSuffix suffix s`
+| `Split`       | ✅ | `strings.Split sep s` (literal, not regex)
+| `SplitN`      | ✅ | `strings.SplitN sep n s`
+| `Trunc`       | ✅ | `strings.Trunc length s`
 |===
+
+NOTE: gomplate's affix/separator argument comes *first* and the operated-on
+string *last* (pipeline-friendly) — `strings.Trim cutset s`, not `s cutset`.
+The seed's original `Trim` had the arguments reversed; it now matches gomplate.
 
 .`conv` (4 / ~20)
 [cols="1,1,3"]
