@@ -1,0 +1,40 @@
+= jgomplate
+
+A pure-Java implementation of https://gomplate.ca[gomplate] — the Go `text/template`
+renderer — built on https://github.com/alexmond/gotmpl4j[gotmpl4j].
+
+jgomplate lets a JVM application render gomplate-flavoured templates without shelling out
+to the Go `gomplate` binary. It is to gomplate what
+https://github.com/alexmond/jhelm[jhelm] is to Helm: the host-specific layer (gomplate's
+namespaced function set, datasources, and CLI) on top of the shared gotmpl4j engine.
+
+[NOTE]
+====
+*Status: seed / early scaffold.* A working subset of the `strings`, `conv`, and `coll`
+namespaces is wired end-to-end (engine + CLI). The full ~200-function surface and the
+remote datasources are tracked follow-up work.
+====
+
+== Modules
+
+`jgomplate-functions`:: gomplate's namespaced functions, discovered via `ServiceLoader`
+(priority 200) on top of `gotmpl4j-core` + Sprig.
+`jgomplate-core`:: the rendering engine (`GomplateEngine`) and datasource layer.
+`jgomplate-cli`:: the `jgomplate` command-line renderer (Spring Boot + Picocli).
+
+== Embedding
+
+[source,java]
+----
+GomplateEngine engine = new GomplateEngine();
+String out = engine.render("Hello, {{ strings.ToUpper .name }}!", Map.of("name", "world"));
+// -> "Hello, WORLD!"
+----
+
+== CLI
+
+[source,bash]
+----
+java -jar jgomplate.jar --in '{{ strings.ToUpper "hello" }}'
+# -> HELLO
+----

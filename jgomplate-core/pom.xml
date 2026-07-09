@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.alexmond</groupId>
+        <artifactId>jgomplate-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+    <artifactId>jgomplate-core</artifactId>
+
+    <name>jgomplate-core</name>
+    <description>gomplate rendering engine and datasource layer for Java</description>
+    <url>https://github.com/alexmond/jgomplate</url>
+
+    <properties>
+        <automatic.module.name>org.alexmond.jgomplate.core</automatic.module.name>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.alexmond</groupId>
+            <artifactId>gotmpl4j-core</artifactId>
+        </dependency>
+        <!-- Sprig functions: gomplate's function set assumes the Sprig baseline, so the
+             engine ships it as a runtime provider (auto-discovered via ServiceLoader). -->
+        <dependency>
+            <groupId>org.alexmond</groupId>
+            <artifactId>gotmpl4j-sprig</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.alexmond</groupId>
+            <artifactId>jgomplate-functions</artifactId>
+        </dependency>
+        <!-- Datasource parsing: JSON via jackson-databind, YAML via the dataformat module.
+             (Managed by the Spring Boot parent BOM.) -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

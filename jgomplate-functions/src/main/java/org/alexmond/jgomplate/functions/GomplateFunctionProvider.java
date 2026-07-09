@@ -1,0 +1,57 @@
+package org.alexmond.jgomplate.functions;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.alexmond.gotmpl4j.Function;
+import org.alexmond.gotmpl4j.FunctionProvider;
+import org.alexmond.gotmpl4j.GoTemplate;
+import org.alexmond.jgomplate.functions.ns.CollNamespace;
+import org.alexmond.jgomplate.functions.ns.ConvNamespace;
+import org.alexmond.jgomplate.functions.ns.StringsNamespace;
+
+/**
+ * {@link FunctionProvider} contributing gomplate's namespaced template functions on top
+ * of the Go builtins (priority 0) and Sprig (priority 100).
+ *
+ * <p>
+ * Each namespace ({@code strings}, {@code conv}, {@code coll}, …) is registered as a
+ * nullary function returning a stateless namespace object; templates then invoke its
+ * methods via Go-template method calls — e.g. {@code {{ strings.ToUpper "hi" }}} resolves
+ * {@code strings} to the {@link StringsNamespace} instance and calls {@code ToUpper}.
+ *
+ * <p>
+ * Priority is {@code 200} (above Sprig), matching the Helm function pack's slot in the
+ * gotmpl4j provider ordering. Discovered automatically via
+ * {@link java.util.ServiceLoader} when {@code jgomplate-functions} is on the classpath.
+ *
+ * @see FunctionProvider
+ */
+public class GomplateFunctionProvider implements FunctionProvider {
+
+	private static final StringsNamespace STRINGS = new StringsNamespace();
+
+	private static final ConvNamespace CONV = new ConvNamespace();
+
+	private static final CollNamespace COLL = new CollNamespace();
+
+	@Override
+	public Map<String, Function> getFunctions(GoTemplate template) {
+		Map<String, Function> functions = new HashMap<>();
+		functions.put("strings", (args) -> STRINGS);
+		functions.put("conv", (args) -> CONV);
+		functions.put("coll", (args) -> COLL);
+		return functions;
+	}
+
+	@Override
+	public int priority() {
+		return 200;
+	}
+
+	@Override
+	public String name() {
+		return "gomplate";
+	}
+
+}
