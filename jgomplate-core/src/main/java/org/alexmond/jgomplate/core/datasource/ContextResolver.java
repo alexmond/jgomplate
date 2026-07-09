@@ -1,8 +1,6 @@
 package org.alexmond.jgomplate.core.datasource;
 
-import java.net.URI;
 import java.util.LinkedHashMap;
-import java.util.Locale;
 import java.util.Map;
 
 import org.alexmond.jgomplate.core.config.DataSourceConfig;
@@ -62,16 +60,7 @@ public class ContextResolver {
 	}
 
 	private Object load(String alias, DataSourceConfig config) {
-		if (config == null || config.getUrl() == null || config.getUrl().isBlank()) {
-			throw new IllegalArgumentException("context '" + alias + "' has no url");
-		}
-		URI uri = Datasources.toUri(config.getUrl());
-		String scheme = (uri.getScheme() != null) ? uri.getScheme().toLowerCase(Locale.ROOT) : null;
-		if (!"file".equals(scheme)) {
-			throw new IllegalArgumentException("datasource '" + alias + "': unsupported scheme '" + scheme
-					+ "' (only local file datasources are supported)");
-		}
-		return this.loader.load(new Datasource(alias, uri));
+		return this.loader.load(Datasources.resolve(alias, config));
 	}
 
 	private static String typeName(Object value) {

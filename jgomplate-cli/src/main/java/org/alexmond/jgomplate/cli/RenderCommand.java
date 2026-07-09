@@ -52,6 +52,10 @@ public class RenderCommand implements Callable<Integer> {
 			description = "Context datasource 'alias=URL' bound to '.' (alias '.' = root). Repeatable.")
 	private List<String> contexts;
 
+	@Option(names = { "-d", "--datasource" },
+			description = "Datasource 'alias=URL' referenced via (ds \"alias\")/include. Repeatable.")
+	private List<String> datasources;
+
 	@Option(names = { "-V", "--verbose" }, description = "Verbose output.")
 	private Boolean verbose;
 
@@ -92,6 +96,7 @@ public class RenderCommand implements Callable<Integer> {
 		cli.setMissingKey(this.missingKey);
 		cli.setExperimental(this.experimental);
 		cli.setContext(parseDatasources(this.contexts));
+		cli.setDatasources(parseDatasources(this.datasources));
 		return cli;
 	}
 

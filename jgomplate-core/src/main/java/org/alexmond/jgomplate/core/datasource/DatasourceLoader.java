@@ -49,4 +49,21 @@ public class DatasourceLoader {
 		}
 	}
 
+	/**
+	 * Read a datasource's raw content without parsing it — backs the {@code include}
+	 * template function.
+	 * @param datasource the datasource to read
+	 * @return the file content as a UTF-8 string
+	 * @throws UncheckedIOException if the file cannot be read
+	 */
+	public String loadRaw(Datasource datasource) {
+		Path path = Path.of(datasource.uri().getSchemeSpecificPart());
+		try {
+			return Files.readString(path);
+		}
+		catch (IOException ex) {
+			throw new UncheckedIOException("Failed to read datasource '" + datasource.alias() + "'", ex);
+		}
+	}
+
 }

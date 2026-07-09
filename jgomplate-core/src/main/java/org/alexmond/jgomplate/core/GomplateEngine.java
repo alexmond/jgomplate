@@ -3,6 +3,7 @@ package org.alexmond.jgomplate.core;
 import java.util.Locale;
 import java.util.Map;
 
+import org.alexmond.gotmpl4j.Function;
 import org.alexmond.gotmpl4j.GoTemplate;
 
 /**
@@ -45,11 +46,31 @@ public class GomplateEngine {
 	 * @throws IllegalArgumentException if {@code missingKey} is not a recognised token
 	 */
 	public String render(String templateText, Map<String, Object> context, String missingKey) {
-		GoTemplate template = new GoTemplate();
+		return render(templateText, context, missingKey, null);
+	}
+
+	/**
+	 * Render {@code templateText} with an explicit missing-key behaviour and extra
+	 * per-render functions (e.g. datasource functions bound to a CLI invocation) merged
+	 * on top of the auto-discovered providers.
+	 * @param templateText the gomplate/Go template source
+	 * @param context the root data exposed as {@code .}; may be empty
+	 * @param missingKey the Go {@code missingkey} token, or {@code null}/blank for the
+	 * default
+	 * @param extraFunctions functions to add for this render (may be {@code null}/empty)
+	 * @return the rendered output
+	 * @throws IllegalArgumentException if {@code missingKey} is not a recognised token
+	 */
+	public String render(String templateText, Map<String, Object> context, String missingKey,
+			Map<String, Function> extraFunctions) {
+		GoTemplate.Builder builder = GoTemplate.builder();
 		if (missingKey != null && !missingKey.isBlank()) {
-			template.option("missingkey=" + missingKey.trim().toLowerCase(Locale.ROOT));
+			builder.option("missingkey=" + missingKey.trim().toLowerCase(Locale.ROOT));
 		}
-		return template.parse("template", templateText).render((context != null) ? context : Map.of());
+		if (extraFunctions != null && !extraFunctions.isEmpty()) {
+			builder.withFunctions(extraFunctions);
+		}
+		return builder.build().parse("template", templateText).render((context != null) ? context : Map.of());
 	}
 
 	/**
