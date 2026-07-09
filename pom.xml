@@ -47,6 +47,8 @@
              gomplate-specific function namespaces + datasources + CLI on top. -->
         <gotmpl4j.version>1.2.0</gotmpl4j.version>
         <picocli.version>4.7.7</picocli.version>
+        <!-- jBCrypt: self-contained (no transitive deps, no Spring) bcrypt for crypto.Bcrypt -->
+        <jbcrypt.version>0.4</jbcrypt.version>
 
         <maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
         <central-publishing-maven-plugin.version>0.10.0</central-publishing-maven-plugin.version>
@@ -97,6 +99,12 @@
                 <groupId>info.picocli</groupId>
                 <artifactId>picocli-spring-boot-starter</artifactId>
                 <version>${picocli.version}</version>
+            </dependency>
+            <!-- jBCrypt (crypto.Bcrypt) -->
+            <dependency>
+                <groupId>org.mindrot</groupId>
+                <artifactId>jbcrypt</artifactId>
+                <version>${jbcrypt.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

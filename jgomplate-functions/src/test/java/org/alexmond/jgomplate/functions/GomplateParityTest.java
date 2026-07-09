@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.mindrot.jbcrypt.BCrypt;
 
 import org.alexmond.gotmpl4j.GoTemplate;
 
@@ -258,6 +259,33 @@ class GomplateParityTest {
 		void sha256OfEmptyString() {
 			assertEquals("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 					render("{{ crypto.SHA256 \"\" }}"));
+		}
+
+		@ParameterizedTest
+		@CsvSource(delimiter = '|', value = {
+				// RFC 6070 PBKDF2-HMAC-SHA1 vectors (SHA1 is gomplate's default)
+				"{{ crypto.PBKDF2 \"password\" \"salt\" 1 20 }}        | 0c60c80f961f0e71f3a9b524af6012062fe037a6",
+				"{{ crypto.PBKDF2 \"password\" \"salt\" 2 20 }}        | ea6c014dc72d6f8ccd1ed92ace1d41f0d8de8957",
+				"{{ crypto.PBKDF2 \"password\" \"salt\" 1 20 \"SHA1\" }}   | 0c60c80f961f0e71f3a9b524af6012062fe037a6",
+				"{{ crypto.PBKDF2 \"password\" \"salt\" 1 32 \"SHA256\" }} | 120fb6cffcf8b32c43e7225256c4f837a86548c92ccc35480805987cb70be17b" })
+		void pbkdf2(String template, String expected) {
+			assertEquals(expected, render(template));
+		}
+
+		@Test
+		void bcryptDefaultCostRoundTrips() {
+			// Bcrypt is salted/non-deterministic — assert the format and that it
+			// verifies.
+			String hash = render("{{ crypto.Bcrypt \"secret\" }}");
+			assertTrue(hash.startsWith("$2a$10$"), hash);
+			assertTrue(BCrypt.checkpw("secret", hash), "hash must verify");
+		}
+
+		@Test
+		void bcryptExplicitCostRoundTrips() {
+			String hash = render("{{ crypto.Bcrypt 6 \"secret\" }}");
+			assertTrue(hash.startsWith("$2a$06$"), hash);
+			assertTrue(BCrypt.checkpw("secret", hash), "hash must verify");
 		}
 
 	}

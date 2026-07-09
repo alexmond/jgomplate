@@ -71,8 +71,8 @@ Status legend: ✅ complete · 🟡 partial (some methods) · ⬜ not started.
 
 | `crypto`
 | 🟡 Partial
-| 7 / ~25
-| The SHA hash digests — `SHA1 SHA224 SHA256 SHA384 SHA512 SHA512_224 SHA512_256` (lowercase hex). Missing `Bcrypt PBKDF2`, the RSA/ECDSA/AES helpers, `WPAPSK`, and the `*Bytes` digest variants.
+| 9 / ~25
+| The SHA hash digests `SHA1 SHA224 SHA256 SHA384 SHA512 SHA512_224 SHA512_256` (lowercase hex), plus `Bcrypt` and `PBKDF2`. Missing the RSA/ECDSA/AES helpers, `WPAPSK`, and the `*Bytes` digest variants.
 
 | `regexp`
 | ⬜ Not started
@@ -250,7 +250,14 @@ returns whole-valued results as an integer so they render without a trailing
 | `SHA512`     | ✅ | `crypto.SHA512 input`
 | `SHA512_224` | ✅ | `crypto.SHA512_224 input`
 | `SHA512_256` | ✅ | `crypto.SHA512_256 input`
+| `Bcrypt`     | ✅ | `crypto.Bcrypt [cost] input` (fixed 1- and 2-arg overloads)
+| `PBKDF2`     | ✅ | `crypto.PBKDF2 password salt iter keylen [hash]` (default HMAC-SHA1; hex out)
 |===
+
+NOTE: gomplate declares `Bcrypt`/`PBKDF2` variadic. Since gotmpl4j matches
+namespace methods by exact parameter count, they are exposed here as
+fixed-arity overloads (`Bcrypt input` / `Bcrypt cost input`; `PBKDF2` with or
+without the trailing hash name) so the common call shapes work.
 
 .`uuid` (4 / 5)
 [cols="1,1,3"]
