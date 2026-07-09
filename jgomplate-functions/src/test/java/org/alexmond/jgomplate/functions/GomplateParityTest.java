@@ -124,6 +124,21 @@ class GomplateParityTest {
 			assertEquals(expected, render(template));
 		}
 
+		@ParameterizedTest
+		@CsvSource(delimiter = '|', value = { // element-wise variadic coercers → a list
+				"{{ range conv.ToInt64s \"42\" \"15\" 3.9 }}{{ . }} {{ end }}   | '42 15 3 '",
+				"{{ range conv.ToInts \"7\" 8 }}{{ . }} {{ end }}              | '7 8 '",
+				"{{ range conv.ToFloat64s \"3.14\" \"1.5\" }}{{ . }} {{ end }}  | '3.14 1.5 '",
+				"{{ range conv.ToStrings 42 true \"x\" }}{{ . }} {{ end }}      | '42 true x '",
+				"{{ range conv.ToBools 1 \"true\" 0 \"no\" }}{{ . }} {{ end }}  | 'true true false false '",
+				// empty input → empty list
+				"{{ range conv.ToInt64s }}x{{ end }}                          | ''",
+				// len confirms arity is preserved
+				"{{ len (conv.ToStrings \"a\" \"b\" \"c\") }}                    | 3" })
+		void pluralCoercers(String template, String expected) {
+			assertEquals(expected, render(template));
+		}
+
 	}
 
 	/**

@@ -1,5 +1,6 @@
 package org.alexmond.jgomplate.functions.ns;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -11,7 +12,10 @@ import org.alexmond.jgomplate.functions.Values;
  * mirror gomplate's Go API (PascalCase).
  *
  * <p>
- * Seed subset of gomplate's full {@code conv} namespace.
+ * The plural {@code To…s} forms are element-wise variadic coercers ({@code conv.ToInt64s
+ * 42 15} → {@code [42 15]}), callable since gotmpl4j 1.2.1 unpacks varargs methods. Each
+ * argument is coerced independently by the matching singular. Still missing: {@code URL}
+ * (returns a parsed-URL object).
  */
 @SuppressWarnings("PMD.MethodNamingConventions") // method names mirror gomplate's Go API
 													// (PascalCase)
@@ -103,6 +107,51 @@ public final class ConvNamespace {
 	/** gomplate {@code conv.Atoi s} — parse a base-10 integer. */
 	public int Atoi(Object s) {
 		return Integer.parseInt(Values.str(s).trim());
+	}
+
+	/** gomplate {@code conv.ToBools in…} — coerce each argument to a boolean. */
+	public List<Boolean> ToBools(Object... in) {
+		List<Boolean> out = new ArrayList<>(in.length);
+		for (Object v : in) {
+			out.add(Values.toBool(v));
+		}
+		return out;
+	}
+
+	/** gomplate {@code conv.ToStrings in…} — coerce each argument to a string. */
+	public List<String> ToStrings(Object... in) {
+		List<String> out = new ArrayList<>(in.length);
+		for (Object v : in) {
+			out.add(Values.toString(v));
+		}
+		return out;
+	}
+
+	/** gomplate {@code conv.ToInt64s in…} — coerce each argument to a 64-bit integer. */
+	public List<Long> ToInt64s(Object... in) {
+		List<Long> out = new ArrayList<>(in.length);
+		for (Object v : in) {
+			out.add(Values.toLong(v));
+		}
+		return out;
+	}
+
+	/** gomplate {@code conv.ToInts in…} — coerce each argument to an integer. */
+	public List<Integer> ToInts(Object... in) {
+		List<Integer> out = new ArrayList<>(in.length);
+		for (Object v : in) {
+			out.add(Math.toIntExact(Values.toLong(v)));
+		}
+		return out;
+	}
+
+	/** gomplate {@code conv.ToFloat64s in…} — coerce each argument to a float. */
+	public List<Double> ToFloat64s(Object... in) {
+		List<Double> out = new ArrayList<>(in.length);
+		for (Object v : in) {
+			out.add(Values.toDouble(v));
+		}
+		return out;
 	}
 
 }
