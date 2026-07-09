@@ -231,7 +231,14 @@ class GomplateParityTest {
 				// Abbrev — vectors from gomplate strings.TestAbbrev (ports goutils)
 				"{{ strings.Abbrev 3 \"foo\" }}            | foo", "{{ strings.Abbrev 2 6 \"foobar\" }}       | foobar",
 				"{{ strings.Abbrev 6 9 \"foobarbazquxquux\" }} | ...baz...",
-				"{{ strings.Abbrev 9 \"The quick brown fox\" }} | The qu..." })
+				"{{ strings.Abbrev 9 \"The quick brown fox\" }} | The qu...",
+				// Slug — vectors from gomplate strings.TestSlug (ports gosimple/slug)
+				"{{ strings.Slug \"Hello, World!\" }}      | hello-world",
+				"{{ strings.Slug \"foo@example.com\" }}    | fooatexample-com",
+				"{{ strings.Slug \"rock & roll!\" }}       | rock-and-roll",
+				"{{ strings.Slug \"100%\" }}               | 100",
+				// non-ASCII Latin transliteration (ü→u, ß→ss)
+				"{{ strings.Slug \"grüne Straße\" }}       | grune-strasse" })
 		void caseQuoteIndent(String template, String expected) {
 			assertEquals(expected, render(template));
 		}

@@ -1,9 +1,11 @@
 package org.alexmond.jgomplate.functions.ns;
 
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.alexmond.jgomplate.functions.Values;
@@ -21,11 +23,11 @@ import org.alexmond.jgomplate.functions.Values;
  * that order exactly.
  *
  * <p>
- * Still missing from the full gomplate {@code strings} namespace: {@code Slug} (needs a
- * transliterating slug library). {@code WordWrap}/{@code Abbrev} port Masterminds'
- * {@code goutils} algorithms verbatim. {@code Trunc}/{@code Split}/{@code WordWrap}/
- * {@code Abbrev} index by character rather than byte (so ASCII matches gomplate exactly;
- * multibyte input may differ).
+ * {@code WordWrap}/{@code Abbrev} port Masterminds' {@code goutils} algorithms verbatim,
+ * and {@code Slug} ports gosimple/slug's English pipeline. {@code Trunc}/{@code Split}/
+ * {@code WordWrap}/{@code Abbrev} index by character rather than byte, and {@code Slug}
+ * approximates {@code unidecode} for non-ASCII input — so ASCII matches gomplate exactly
+ * while multibyte/exotic-script input may differ.
  */
 @SuppressWarnings("PMD.MethodNamingConventions") // method names mirror gomplate's Go API
 													// (PascalCase)
@@ -34,6 +36,21 @@ public final class StringsNamespace {
 	private static final Pattern NON_ALPHA_NUM = Pattern.compile("[^\\p{L}\\p{N}]+");
 
 	private static final Pattern SPACES = Pattern.compile("\\s+");
+
+	private static final Pattern COMBINING_MARKS = Pattern.compile("\\p{M}+");
+
+	private static final Pattern SLUG_NON_AUTH = Pattern.compile("[^a-z0-9_-]");
+
+	private static final Pattern SLUG_DASHES = Pattern.compile("-+");
+
+	/**
+	 * Latin letters that do not decompose under Unicode NFD; mapped to the same ASCII the
+	 * gosimple {@code unidecode} transliteration gomplate uses would produce.
+	 */
+	private static final Map<Character, String> TRANSLIT = Map.ofEntries(Map.entry('ß', "ss"), Map.entry('æ', "ae"),
+			Map.entry('Æ', "AE"), Map.entry('œ', "oe"), Map.entry('Œ', "OE"), Map.entry('ø', "o"), Map.entry('Ø', "O"),
+			Map.entry('đ', "d"), Map.entry('Đ', "D"), Map.entry('ð', "d"), Map.entry('Ð', "D"), Map.entry('þ', "th"),
+			Map.entry('Þ', "TH"), Map.entry('ł', "l"), Map.entry('Ł', "L"), Map.entry('ı', "i"), Map.entry('ħ', "h"));
 
 	public String ToUpper(Object s) {
 		return Values.str(s).toUpperCase(Locale.ROOT);
@@ -267,6 +284,51 @@ public final class StringsNamespace {
 		// restore the first character's original case, as gomplate does
 		titled = input.charAt(0) + titled.substring(1);
 		return NON_ALPHA_NUM.matcher(titled).replaceAll("");
+	}
+
+	/**
+	 * gomplate {@code strings.Slug in} — a URL-friendly slug. Ports gosimple/slug's
+	 * English pipeline: substitute {@code &}→{@code and} / {@code @}→{@code at},
+	 * transliterate to ASCII, lowercase, replace runs of non-{@code [a-z0-9_-]} with
+	 * {@code -}, and trim.
+	 *
+	 * <p>
+	 * ASCII input matches gomplate exactly; non-ASCII transliteration approximates
+	 * gosimple's {@code unidecode} via Unicode NFD plus a small Latin map, so common
+	 * accented Latin text matches but exotic scripts may differ.
+	 */
+	public String Slug(Object in) {
+		String s = Values.toString(in).strip();
+		s = s.replace("&", "and").replace("@", "at");
+		s = transliterate(s);
+		s = s.toLowerCase(Locale.ROOT);
+		s = SLUG_NON_AUTH.matcher(s).replaceAll("-");
+		s = SLUG_DASHES.matcher(s).replaceAll("-");
+		int start = 0;
+		int end = s.length();
+		while (start < end && (s.charAt(start) == '-' || s.charAt(start) == '_')) {
+			start++;
+		}
+		while (end > start && (s.charAt(end - 1) == '-' || s.charAt(end - 1) == '_')) {
+			end--;
+		}
+		return s.substring(start, end);
+	}
+
+	private static String transliterate(String s) {
+		String decomposed = COMBINING_MARKS.matcher(Normalizer.normalize(s, Normalizer.Form.NFD)).replaceAll("");
+		StringBuilder out = new StringBuilder(decomposed.length());
+		for (int i = 0; i < decomposed.length(); i++) {
+			char c = decomposed.charAt(i);
+			String mapped = TRANSLIT.get(c);
+			if (mapped != null) {
+				out.append(mapped);
+			}
+			else {
+				out.append(c);
+			}
+		}
+		return out.toString();
 	}
 
 	/**
