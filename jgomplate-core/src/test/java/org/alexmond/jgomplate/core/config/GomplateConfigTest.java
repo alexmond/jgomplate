@@ -1,6 +1,8 @@
 package org.alexmond.jgomplate.core.config;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
@@ -42,6 +44,26 @@ class GomplateConfigTest {
 		cli.setExperimental(true);
 		base.mergeFrom(cli);
 		assertTrue(base.getExperimental());
+	}
+
+	@Test
+	void overlayMergesDatasourceMapsEntryWise() {
+		GomplateConfig base = new GomplateConfig();
+		base.setContext(new LinkedHashMap<>(Map.of("a", dsUrl("a.json"))));
+
+		GomplateConfig cli = new GomplateConfig();
+		cli.setContext(Map.of("b", dsUrl("b.json")));
+
+		base.mergeFrom(cli);
+
+		assertEquals("a.json", base.getContext().get("a").getUrl(), "base entry kept");
+		assertEquals("b.json", base.getContext().get("b").getUrl(), "overlay entry added");
+	}
+
+	private static DataSourceConfig dsUrl(String url) {
+		DataSourceConfig ds = new DataSourceConfig();
+		ds.setUrl(url);
+		return ds;
 	}
 
 	@Test

@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.io.TempDir;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import org.alexmond.jgomplate.core.config.DataSourceConfig;
 import org.alexmond.jgomplate.core.config.GomplateConfig;
 
 class GomplateRunnerTest {
@@ -87,6 +89,40 @@ class GomplateRunnerTest {
 		this.runner.run(config, NO_STDIN, out);
 
 		assertEquals("[]", out.toString(StandardCharsets.UTF_8));
+	}
+
+	@Test
+	void contextDatasourceBoundToRoot(@TempDir Path dir) throws Exception {
+		Path data = dir.resolve("data.json");
+		Files.writeString(data, "{\"name\":\"alex\"}");
+		GomplateConfig config = new GomplateConfig();
+		config.setIn("hi {{ .name }}");
+		config.setContext(Map.of(".", dsConfig(data.toString())));
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+		this.runner.run(config, NO_STDIN, out);
+
+		assertEquals("hi alex", out.toString(StandardCharsets.UTF_8));
+	}
+
+	@Test
+	void namedContextReachableByAlias(@TempDir Path dir) throws Exception {
+		Path data = dir.resolve("data.yaml");
+		Files.writeString(data, "env: prod\n");
+		GomplateConfig config = new GomplateConfig();
+		config.setIn("{{ .cfg.env }}");
+		config.setContext(Map.of("cfg", dsConfig(data.toString())));
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+		this.runner.run(config, NO_STDIN, out);
+
+		assertEquals("prod", out.toString(StandardCharsets.UTF_8));
+	}
+
+	private static DataSourceConfig dsConfig(String url) {
+		DataSourceConfig config = new DataSourceConfig();
+		config.setUrl(url);
+		return config;
 	}
 
 	@Test

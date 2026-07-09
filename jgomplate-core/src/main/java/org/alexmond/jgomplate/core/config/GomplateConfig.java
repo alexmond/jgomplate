@@ -1,5 +1,6 @@
 package org.alexmond.jgomplate.core.config;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -156,19 +157,30 @@ public class GomplateConfig {
 		if (other.experimental != null) {
 			this.experimental = other.experimental;
 		}
-		if (other.datasources != null) {
-			this.datasources = other.datasources;
-		}
-		if (other.context != null) {
-			this.context = other.context;
-		}
-		if (other.templates != null) {
-			this.templates = other.templates;
-		}
-		if (other.plugins != null) {
-			this.plugins = other.plugins;
-		}
+		this.datasources = mergeMap(this.datasources, other.datasources);
+		this.context = mergeMap(this.context, other.context);
+		this.templates = mergeMap(this.templates, other.templates);
+		this.plugins = mergeMap(this.plugins, other.plugins);
 		return this;
+	}
+
+	/**
+	 * Overlay {@code over}'s entries onto {@code base}, entry-wise (a set overlay key
+	 * wins; other base entries are kept). Unlike the scalar/list fields, datasource-style
+	 * maps are merged rather than replaced so a CLI {@code -c}/{@code -d} adds to the
+	 * file's set.
+	 * @param base the base map (may be {@code null})
+	 * @param over the overlay map ({@code null} = no change)
+	 * @param <V> the map value type
+	 * @return the merged map, or {@code base} unchanged when {@code over} is {@code null}
+	 */
+	private static <V> Map<String, V> mergeMap(Map<String, V> base, Map<String, V> over) {
+		if (over == null) {
+			return base;
+		}
+		Map<String, V> result = (base != null) ? new LinkedHashMap<>(base) : new LinkedHashMap<>();
+		result.putAll(over);
+		return result;
 	}
 
 }

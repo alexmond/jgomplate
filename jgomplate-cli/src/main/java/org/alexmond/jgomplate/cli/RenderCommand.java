@@ -1,6 +1,8 @@
 package org.alexmond.jgomplate.cli;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 
 import picocli.CommandLine.Command;
@@ -10,7 +12,9 @@ import org.springframework.stereotype.Component;
 
 import org.alexmond.jgomplate.core.GomplateRunner;
 import org.alexmond.jgomplate.core.config.ConfigLoader;
+import org.alexmond.jgomplate.core.config.DataSourceConfig;
 import org.alexmond.jgomplate.core.config.GomplateConfig;
+import org.alexmond.jgomplate.core.datasource.Datasources;
 
 /**
  * The {@code jgomplate} render command. Builds a {@link GomplateConfig} from the flags
@@ -43,6 +47,10 @@ public class RenderCommand implements Callable<Integer> {
 	@Option(names = { "--missing-key" },
 			description = "Behaviour on a missing map key: error (default), zero, default, invalid.")
 	private String missingKey;
+
+	@Option(names = { "-c", "--context" },
+			description = "Context datasource 'alias=URL' bound to '.' (alias '.' = root). Repeatable.")
+	private List<String> contexts;
 
 	@Option(names = { "-V", "--verbose" }, description = "Verbose output.")
 	private Boolean verbose;
@@ -83,7 +91,21 @@ public class RenderCommand implements Callable<Integer> {
 		cli.setOutputFiles(this.outputs);
 		cli.setMissingKey(this.missingKey);
 		cli.setExperimental(this.experimental);
+		cli.setContext(parseDatasources(this.contexts));
 		return cli;
+	}
+
+	/** Parse repeatable {@code alias=URL} arguments into the config's datasource map. */
+	private static Map<String, DataSourceConfig> parseDatasources(List<String> args) {
+		if (args == null) {
+			return null;
+		}
+		Map<String, DataSourceConfig> map = new LinkedHashMap<>();
+		for (String arg : args) {
+			Map.Entry<String, DataSourceConfig> entry = Datasources.parseArg(arg);
+			map.put(entry.getKey(), entry.getValue());
+		}
+		return map;
 	}
 
 }
