@@ -51,8 +51,8 @@ Status legend: ✅ complete · 🟡 partial (some methods) · ⬜ not started.
 
 | `data`
 | 🟡 Partial
-| 7 / ~13
-| `JSON JSONArray YAML YAMLArray ToJSON ToJSONPretty ToYAML` (via Jackson). `ToJSON` is canonical (sorted keys, compact); `ToJSONPretty` indents that like Go's `json.Indent`; `ToYAML` uses 2-space indent, sorted keys, no `---` marker. Missing `TOML`/`ToTOML`, the variadic `CSV`/`CSVByRow`/`CSVByColumn`/`ToCSV`, and `CUE`.
+| 11 / ~13
+| `JSON JSONArray YAML YAMLArray ToJSON ToJSONPretty ToYAML` (via Jackson) plus the CSV set `CSV CSVByRow CSVByColumn ToCSV` (hand-rolled RFC4180, matching gomplate's arg shapes + CRLF output). `ToJSON` is canonical (sorted keys, compact); `ToJSONPretty` indents that like Go's `json.Indent`; `ToYAML` uses 2-space indent, sorted keys, no `---` marker. Missing only `TOML`/`ToTOML` and `CUE`/`ToCUE`.
 
 | `base64`
 | ✅ Complete
@@ -312,18 +312,24 @@ without the trailing hash name) so the common call shapes work.
 | `ExpandEnv` | ✅ | `env.ExpandEnv s` (`$VAR` / `${VAR}`)
 |===
 
-.`data` (7 / ~13)
+.`data` (11 / ~13)
 [cols="1,1,3"]
 |===
 | Method | Status | gomplate signature
 
-| `JSON`       | ✅ | `data.JSON in` → map
-| `JSONArray`  | ✅ | `data.JSONArray in` → list
-| `YAML`       | ✅ | `data.YAML in` → map
-| `YAMLArray`  | ✅ | `data.YAMLArray in` → list
+| `JSON`         | ✅ | `data.JSON in` → map
+| `JSONArray`    | ✅ | `data.JSONArray in` → list
+| `YAML`         | ✅ | `data.YAML in` → map
+| `YAMLArray`    | ✅ | `data.YAMLArray in` → list
 | `ToJSON`       | ✅ | `data.ToJSON in` (canonical: sorted keys, compact)
 | `ToJSONPretty` | ✅ | `data.ToJSONPretty indent in` (Go `json.Indent` layout)
 | `ToYAML`       | ✅ | `data.ToYAML in` (2-space indent, sorted keys)
+| `CSV`          | ✅ | `data.CSV [delim] [hdr] in` → `[][]string` (header row first)
+| `CSVByRow`     | ✅ | `data.CSVByRow [delim] [hdr] in` → list of maps
+| `CSVByColumn`  | ✅ | `data.CSVByColumn [delim] [hdr] in` → map of columns
+| `ToCSV`        | ✅ | `data.ToCSV [delim] rows` (RFC4180, CRLF)
+| `TOML`/`ToTOML`| ⬜ | needs a TOML parser
+| `CUE`/`ToCUE`  | ⬜ | needs a CUE engine
 |===
 
 == Datasource parity
@@ -376,12 +382,13 @@ of gomplate's CLI but none of the datasource, context, or directory machinery.
 * **Variadic namespace methods now work (gotmpl4j 1.2.1+).** Earlier versions matched
   methods by exact parameter count and did not unpack Java varargs, so a variadic
   method such as `math.Add(Object...)` resolved to nothing. gotmpl4j 1.2.1 unpacks
-  varargs, so `Object...` namespace methods are callable directly — `math` (`Add Mul
-  Max Min Seq`), `coll` (`Slice Keys Values Dict Merge Sort Index Pick Omit Flatten`),
-  `conv` (the `…s` plural forms), and `strings` (`Indent RuneCount`) are done. The
-  remaining variadic function `data.CSV` is simply *not yet ported*, no longer blocked by
-  the engine. `strings.WordWrap`/`Abbrev` and `strings.Slug` stay out for a different
-  reason: they need the exact `goutils`/slug algorithms, not a varargs fix.
+  varargs, so `Object...` namespace methods are callable directly. The varargs-unblock
+  sweep is complete: `math` (`Add Mul Max Min Seq`), `coll` (`Slice Keys Values Dict
+  Merge Sort Index Pick Omit Flatten`), `conv` (the `…s` plural forms), `strings`
+  (`Indent RuneCount`), and `data` (`CSV CSVByRow CSVByColumn ToCSV`) are all done —
+  no variadic function is blocked by the engine any more. The functions still absent
+  (`strings.WordWrap`/`Abbrev`/`Slug`, `coll.JSONPath`/`JQ`, `data.TOML`/`CUE`, …) need
+  an external algorithm or engine, not a varargs fix.
 * **Namespace args arrive loosely typed** (`Object`) and are coerced through
   `functions.Values`. Coercion edge cases (e.g. numeric strings, nil handling) may
   differ from gomplate's Go type handling until each method has a parity test.

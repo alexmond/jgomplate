@@ -443,6 +443,39 @@ class GomplateParityTest {
 			assertEquals("{}", render("{{ data.ToJSONPretty \"  \" (data.JSON \"{}\") }}"));
 		}
 
+		@Test
+		void csvRead() {
+			// first line is the header; CSV keeps it as row 0
+			Map<String, Object> d = Map.of("in", "a,b\n1,2\n3,4");
+			assertEquals("b", render("{{ index (index (data.CSV .in) 0) 1 }}", d));
+			assertEquals("1", render("{{ index (index (data.CSV .in) 1) 0 }}", d));
+			assertEquals("1", render("{{ index (index (data.CSVByRow .in) 0) \"a\" }}", d));
+			// column "b" across the two data rows → [2, 4]
+			assertEquals("4", render("{{ index (index (data.CSVByColumn .in) \"b\") 1 }}", d));
+		}
+
+		@Test
+		void csvDelimiterAndHeaderArgs() {
+			// single-char first arg → delimiter
+			assertEquals("1", render("{{ index (index (data.CSV \";\" .in) 1) 0 }}", Map.of("in", "a;b\n1;2")));
+			// empty header arg → auto-named columns A, B, …; first line stays data
+			Map<String, Object> d = Map.of("in", "1,2\n3,4");
+			assertEquals("1", render("{{ index (index (data.CSVByRow \"\" .in) 0) \"A\" }}", d));
+			assertEquals("2", render("{{ index (index (data.CSVByRow \"\" .in) 0) \"B\" }}", d));
+			// explicit header (3-arg) → every line is data
+			assertEquals("x", render("{{ index (index (data.CSV \",\" \"x,y\" \"1,2\") 0) 0 }}"));
+			assertEquals("1", render("{{ index (index (data.CSV \",\" \"x,y\" \"1,2\") 1) 0 }}"));
+		}
+
+		@Test
+		void toCsv() {
+			// RFC4180 output — CRLF terminators, minimal quoting
+			assertEquals("a,b\r\n1,2\r\n", render("{{ data.ToCSV (list (list \"a\" \"b\") (list \"1\" \"2\")) }}"));
+			assertEquals("a;b\r\n", render("{{ data.ToCSV \";\" (list (list \"a\" \"b\")) }}"));
+			// a cell containing the delimiter is quoted
+			assertEquals("\"a,b\",c\r\n", render("{{ data.ToCSV (list (list \"a,b\" \"c\")) }}"));
+		}
+
 	}
 
 	/** {@code uuid} namespace. Cases mirror gomplate's internal/funcs/uuid_test.go. */
