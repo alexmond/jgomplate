@@ -1,0 +1,260 @@
+= gomplate Parity
+:navtitle: gomplate Parity
+
+This page tracks how much of upstream https://gomplate.ca[gomplate] jgomplate
+implements — the namespaced function set, the datasource layer, and the CLI — and
+flags where behaviour is only *partially* faithful so template authors know where
+output may diverge from the Go `gomplate` binary.
+
+[IMPORTANT]
+====
+jgomplate is an early *seed*. A working subset of the `strings`, `conv`, and `coll`
+namespaces is wired end-to-end (engine + CLI); the bulk of gomplate's ~200-function
+surface, the remote datasources, and most of the CLI are tracked follow-up work.
+This page is the honest map of that gap — not a claim of completeness.
+====
+
+Baseline: gomplate v4 function namespaces as documented at
+https://docs.gomplate.ca/functions/[docs.gomplate.ca]. Two function layers come
+*for free* from the underlying gotmpl4j engine and are not re-counted here as
+gomplate-specific work:
+
+* **Go `text/template` builtins** — provided by `gotmpl4j-core` (priority 0).
+* **Sprig functions** — provided by `gotmpl4j-sprig` (priority 100). gomplate also
+  embeds the full Sprig library, so these render unchanged.
+
+The gomplate *namespaces* (priority 200) are the jgomplate-specific layer, and are
+where the parity gap lives.
+
+== Summary — namespaces
+
+Status legend: ✅ complete · 🟡 partial (some methods) · ⬜ not started.
+
+[cols="1,1,1,3"]
+|===
+| Namespace | Status | Methods | Notes
+
+| `strings`
+| 🟡 Partial
+| 7 / ~30
+| `ToUpper ToLower Trim TrimSpace Repeat ReplaceAll Contains`. Missing the case-format helpers (`CamelCase SnakeCase KebabCase Slug`), the trim variants (`TrimPrefix/Suffix/Left/Right`), `Split/SplitN`, `Indent Trunc Abbrev WordWrap Quote Squote ShellQuote Title Sort RuneCount Initials HasPrefix HasSuffix`.
+
+| `conv`
+| 🟡 Partial
+| 4 / ~20
+| `ToBool ToString Default Join`. Missing the numeric coercions (`ToInt ToInt64 ToFloat64 ParseInt ParseFloat ParseUint`), the plural/`s` forms (`ToBools ToInts ToStrings …`), and `URL`.
+
+| `coll`
+| 🟡 Partial
+| 2 / ~18
+| `Has Reverse` work. `Slice` is present but *not callable from templates* (variadic — see <<known-limitations>>). Missing `Append Prepend Uniq Flatten Merge Sort Keys Values Pick Omit Dict Index JSONPath GoSlice`.
+
+| `data`
+| ⬜ Not started
+| 0 / ~13
+| gomplate's most-used namespace (`data.JSON data.YAML data.ToJSON data.ToYAML data.CSV data.TOML …`). *Partly covered indirectly:* the datasource layer parses JSON/YAML, and Sprig's `toJson`/`fromJson`/`toYaml` are available non-namespaced. The `data.*` namespace itself is not registered.
+
+| `base64`
+| ⬜ Not started
+| 0 / 3
+| `Encode Decode DecodeBytes`. Sprig's `b64enc`/`b64dec` are available as a stopgap.
+
+| `math`
+| ⬜ Not started
+| 0 / ~16
+| `Add Sub Mul Div Rem Pow Abs Ceil Floor Round Max Min Seq IsInt IsFloat IsNum`. Sprig math is available non-namespaced.
+
+| `time`
+| ⬜ Not started
+| 0 / ~15
+| `Now Parse ParseDuration Since Unix ZoneName …` plus the duration constants.
+
+| `crypto`
+| ⬜ Not started
+| 0 / ~25
+| `SHA1..SHA512 Bcrypt PBKDF2 RSA*/ECDSA* EncryptAES DecryptAES WPAPSK …`.
+
+| `regexp`
+| ⬜ Not started
+| 0 / 7
+| `Find FindAll Match Replace ReplaceLiteral Split QuoteMeta`.
+
+| `uuid`
+| ⬜ Not started
+| 0 / 5
+| `V1 V4 Nil IsValid Parse`. Sprig's `uuidv4` is available.
+
+| `random`
+| ⬜ Not started
+| 0 / 6
+| `ASCII Alpha AlphaNum Number String Item`.
+
+| `env`
+| ⬜ Not started
+| 0 / 2
+| `Getenv ExpandEnv`.
+
+| `file`
+| ⬜ Not started
+| 0 / 7
+| `Exists IsDir Read ReadDir Stat Walk Write`.
+
+| `path` / `filepath`
+| ⬜ Not started
+| 0 / ~12
+| `Base Dir Ext Clean Join Split Match IsAbs …`.
+
+| `net`
+| ⬜ Not started
+| 0 / ~14
+| `LookupIP LookupSRV LookupTXT ParseIP CIDRHost CIDRNetmask …`.
+
+| `sockaddr`
+| ⬜ Not started
+| 0 / ~20
+| The full go-sockaddr helper set.
+
+| `test`
+| ⬜ Not started
+| 0 / ~6
+| `Assert Fail Required Ternary IsKind Kind`.
+
+| `tmpl`
+| ⬜ Not started
+| 0 / 4
+| `Exec Inline Path T`.
+
+| `bloblang`
+| ⬜ Not started
+| 0 / 2
+| Benthos Bloblang mapping — unlikely to port faithfully; low priority.
+
+| `aws` / `gcp`
+| ⬜ Not started
+| 0
+| Cloud-metadata helpers; depend on the corresponding datasources.
+|===
+
+== Method-level coverage (implemented namespaces)
+
+The three partially-implemented namespaces, method by method. ✅ = present and
+faithful to gomplate's signature; blank row group = not yet ported.
+
+.`strings` (7 / ~30)
+[cols="1,1,3"]
+|===
+| Method | Status | gomplate signature
+
+| `ToUpper`     | ✅ | `strings.ToUpper s`
+| `ToLower`     | ✅ | `strings.ToLower s`
+| `TrimSpace`   | ✅ | `strings.TrimSpace s`
+| `Trim`        | ✅ | `strings.Trim s cutset`
+| `Repeat`      | ✅ | `strings.Repeat count s`
+| `ReplaceAll`  | ✅ | `strings.ReplaceAll old new s`
+| `Contains`    | ✅ | `strings.Contains substr s`
+|===
+
+.`conv` (4 / ~20)
+[cols="1,1,3"]
+|===
+| Method | Status | gomplate signature
+
+| `ToBool`   | ✅ | `conv.ToBool in`
+| `ToString` | ✅ | `conv.ToString in`
+| `Default`  | ✅ | `conv.Default default in`
+| `Join`     | ✅ | `conv.Join list sep`
+|===
+
+.`coll` (2 working / ~18)
+[cols="1,1,3"]
+|===
+| Method | Status | gomplate signature
+
+| `Has`     | ✅ | `coll.Has list item`
+| `Reverse` | ✅ | `coll.Reverse list`
+| `Slice`   | 🟡 | `coll.Slice items...` — implemented but *not callable from templates* (variadic; see <<known-limitations>>). Use Sprig's `list` instead.
+|===
+
+== Datasource parity
+
+gomplate's datasource system (`-d alias=<url>`, the `datasource`/`ds` functions,
+`defineDatasource`, `include`) supports a long list of URL schemes with
+`Content-Type`-based parsing. jgomplate currently reads *local files only*, by
+extension.
+
+[cols="1,1,3"]
+|===
+| Capability | Status | Notes
+
+| Local `file://` JSON      | ✅ | Parsed by Jackson (`.json`).
+| Local `file://` YAML      | ✅ | Parsed by the Jackson YAML dataformat (`.yaml` / `.yml`).
+| Extension-based dispatch  | 🟡 | Format chosen by file suffix, *not* by `Content-Type` as gomplate does.
+| TOML / CSV / ENV / plain  | ⬜ | Not parsed yet.
+| `http` / `https`          | ⬜ | Remote fetch not implemented.
+| `vault` / `consul` / `boltdb` | ⬜ | Not implemented.
+| `aws+smp` / `aws+sm` / `s3` / `gs` | ⬜ | Not implemented.
+| `merge:` (layered sources) | ⬜ | Not implemented.
+| `datasource` / `ds` / `include` template funcs | ⬜ | The functions that expose a datasource *inside* a template are not registered; a loaded datasource is passed as the render context only.
+|===
+
+== CLI parity
+
+The `jgomplate` command renders a single template. It covers the input/output core
+of gomplate's CLI but none of the datasource, context, or directory machinery.
+
+[cols="1,1,3"]
+|===
+| gomplate flag | jgomplate | Notes
+
+| `-f, --file`          | ✅ `-f/--file` | Single template file.
+| `-i, --in`            | ✅ `-i/--in`   | Inline template string.
+| `-o, --out`           | ✅ `-o/--out`  | Output file; defaults to stdout.
+| `-d, --datasource`    | ⬜ | Not wired to the CLI yet.
+| `-c, --context`       | ⬜ | No context/`.` population from the CLI.
+| `--input-dir` / `--output-dir` | ⬜ | No directory-tree rendering.
+| `--exec-pipe`         | ⬜ | Not implemented.
+| `-t, --template`      | ⬜ | Nested/partial template registration not implemented.
+| `--left-delim` / `--right-delim` | ⬜ | Custom delimiters not exposed.
+| `--plugin`            | ⬜ | External-command plugins not implemented.
+| `--missing-key`       | ⬜ | Missing-key behaviour not configurable.
+|===
+
+[#known-limitations]
+== Known engine limitations
+
+* **Variadic namespace methods are not callable from templates.** gotmpl4j's method
+  executor matches by exact parameter count and does not unpack Java varargs, so a
+  variadic method such as `coll.Slice(Object...)` resolves to nothing when invoked
+  from a template. Build lists with Sprig's variadic `list` function until upstream
+  varargs-method support lands in
+  https://github.com/alexmond/gotmpl4j[gotmpl4j]. This is the main known gap and it
+  is fixed upstream, never worked around in this repo.
+* **Namespace args arrive loosely typed** (`Object`) and are coerced through
+  `functions.Values`. Coercion edge cases (e.g. numeric strings, nil handling) may
+  differ from gomplate's Go type handling until each method has a parity test.
+* **Non-deterministic functions** (once `crypto`, `random`, `uuid`, `time.Now` land)
+  will not reproduce Go's exact byte output — only format/length/charset will be
+  guaranteed, the same caveat jhelm documents for Sprig's random/crypto helpers.
+
+== How to extend
+
+Adding a gomplate function is a four-step change (see `CLAUDE.md` →
+_Adding a gomplate function_):
+
+. Find or create the namespace class in `jgomplate-functions/.../functions/ns/`.
+. Add a `public` method named exactly as gomplate names it (PascalCase), taking
+  `Object` params coerced through `Values`.
+. If it is a *new* namespace, register it in `GomplateFunctionProvider#getFunctions`.
+. Add a rendering test in `GomplateNamespaceTest` asserting against real engine
+  output.
+
+Keep method names verbatim to gomplate's Go API so templates written for gomplate
+render unchanged.
+
+== References
+
+* https://docs.gomplate.ca/functions/[gomplate — Function Reference]
+* https://docs.gomplate.ca/datasources/[gomplate — Datasources]
+* https://docs.gomplate.ca/usage/[gomplate — CLI Usage]
+* https://masterminds.github.io/sprig/[Sprig Function Documentation]
+* https://pkg.go.dev/text/template#hdr-Functions[Go `text/template` — Builtin Functions]
