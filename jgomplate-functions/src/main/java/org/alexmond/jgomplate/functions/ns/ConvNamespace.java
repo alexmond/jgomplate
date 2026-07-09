@@ -1,5 +1,7 @@
 package org.alexmond.jgomplate.functions.ns;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -14,8 +16,9 @@ import org.alexmond.jgomplate.functions.Values;
  * <p>
  * The plural {@code To…s} forms are element-wise variadic coercers ({@code conv.ToInt64s
  * 42 15} → {@code [42 15]}), callable since gotmpl4j 1.2.1 unpacks varargs methods. Each
- * argument is coerced independently by the matching singular. Still missing: {@code URL}
- * (returns a parsed-URL object).
+ * argument is coerced independently by the matching singular. {@code URL} returns a
+ * {@link ParsedUrl} whose Go-style fields ({@code .Scheme}, {@code .Host}, …) are
+ * reachable from templates.
  */
 @SuppressWarnings("PMD.MethodNamingConventions") // method names mirror gomplate's Go API
 													// (PascalCase)
@@ -152,6 +155,20 @@ public final class ConvNamespace {
 			out.add(Values.toDouble(v));
 		}
 		return out;
+	}
+
+	/**
+	 * gomplate {@code conv.URL s} — parse {@code s} into a {@link ParsedUrl} whose
+	 * Go-style fields ({@code .Scheme}, {@code .Host}, {@code .Path}, {@code .Query}, …)
+	 * can be read from templates.
+	 */
+	public ParsedUrl URL(Object s) {
+		try {
+			return new ParsedUrl(new URI(Values.toString(s)));
+		}
+		catch (URISyntaxException ex) {
+			throw new IllegalArgumentException("could not parse URL: " + ex.getMessage(), ex);
+		}
 	}
 
 }

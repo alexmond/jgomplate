@@ -41,8 +41,8 @@ Status legend: ✅ complete · 🟡 partial (some methods) · ⬜ not started.
 
 | `conv`
 | 🟡 Partial
-| 16 / ~20
-| `ToBool ToString Default Join ToInt64 ToInt ToFloat64 ParseInt ParseFloat ParseUint Atoi` plus the element-wise plural forms `ToBools ToStrings ToInt64s ToInts ToFloat64s` (variadic; callable since 1.2.1). Missing only `URL` (returns a parsed-URL object).
+| 17 / ~20
+| `ToBool ToString Default Join ToInt64 ToInt ToFloat64 ParseInt ParseFloat ParseUint Atoi` plus the element-wise plural forms `ToBools ToStrings ToInt64s ToInts ToFloat64s` (variadic) and `URL` (returns a `ParsedUrl` whose Go-style fields `.Scheme`/`.Host`/`.Path`/`.Query`/… read from templates). Essentially complete.
 
 | `coll`
 | 🟡 Partial
@@ -179,7 +179,7 @@ NOTE: gomplate's affix/separator argument comes *first* and the operated-on
 string *last* (pipeline-friendly) — `strings.Trim cutset s`, not `s cutset`.
 The seed's original `Trim` had the arguments reversed; it now matches gomplate.
 
-.`conv` (16 / ~20)
+.`conv` (17 / ~20)
 [cols="1,1,3"]
 |===
 | Method | Status | gomplate signature
@@ -200,7 +200,7 @@ The seed's original `Trim` had the arguments reversed; it now matches gomplate.
 | `ToInt64s`   | ✅ | `conv.ToInt64s in…` (element-wise variadic)
 | `ToInts`     | ✅ | `conv.ToInts in…` (element-wise variadic)
 | `ToFloat64s` | ✅ | `conv.ToFloat64s in…` (element-wise variadic)
-| `URL`        | ⬜ | returns a parsed-URL object
+| `URL`        | ✅ | `conv.URL s` → `ParsedUrl` (`.Scheme` `.Host` `.Path` `.Query` …)
 |===
 
 .`coll` (16 working / ~18)

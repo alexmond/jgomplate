@@ -139,6 +139,21 @@ class GomplateParityTest {
 			assertEquals(expected, render(template));
 		}
 
+		@Test
+		void url() {
+			// conv.URL parses into a Go-url-shaped object; fields are read by name
+			String u = "{{ $u := conv.URL \"https://example.com:443/foo/bar?baz=qux#quux\" }}";
+			assertEquals("https example.com:443 example.com 443 /foo/bar baz=qux quux",
+					render(u + "{{ $u.Scheme }} {{ $u.Host }} {{ $u.Hostname }} {{ $u.Port }} "
+							+ "{{ $u.Path }} {{ $u.RawQuery }} {{ $u.Fragment }}"));
+			// parenthesised-call field access works too
+			assertEquals("https", render("{{ (conv.URL \"https://x/p\").Scheme }}"));
+			// .Query parses into name → values (form-decoded)
+			assertEquals("qux", render("{{ index (index (conv.URL \"https://x/p?baz=qux\").Query \"baz\") 0 }}"));
+			// userinfo is exposed as the raw string
+			assertEquals("alice", render("{{ (conv.URL \"https://alice@example.com/p\").User }}"));
+		}
+
 	}
 
 	/**
