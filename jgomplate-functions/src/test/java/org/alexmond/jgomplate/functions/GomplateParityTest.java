@@ -277,8 +277,23 @@ class GomplateParityTest {
 						// render-agnostic
 						"{{ range coll.Reverse (list 1 2 3 4) }}{{ . }}{{ end }} | 4321",
 						"{{ range coll.Reverse (list 8) }}{{ . }}{{ end }}       | 8",
-						"{{ range coll.Reverse (list) }}x{{ end }}               | ''" })
+						"{{ range coll.Reverse (list) }}x{{ end }}               | ''",
+						// Append/Prepend arg order: v list
+						"{{ range coll.Append 3 (list 1 2) }}{{ . }}{{ end }}    | 123",
+						"{{ range coll.Prepend 0 (list 1 2) }}{{ . }}{{ end }}   | 012",
+						// Uniq keeps first-seen order
+						"{{ range coll.Uniq (list 1 2 2 3 1) }}{{ . }}{{ end }}  | 123" })
 		void coll(String template, String expected) {
+			assertEquals(expected, render(template));
+		}
+
+		@ParameterizedTest
+		@CsvSource(delimiter = '|',
+				value = { "{{ index (coll.Set \"b\" 2 (dict \"a\" 1)) \"b\" }}       | 2",
+						"{{ index (coll.Set \"b\" 2 (dict \"a\" 1)) \"a\" }}       | 1",
+						"{{ index (coll.Unset \"a\" (dict \"a\" 1 \"b\" 2)) \"b\" }} | 2",
+						"{{ len (coll.Unset \"a\" (dict \"a\" 1 \"b\" 2)) }}       | 1" })
+		void setAndUnset(String template, String expected) {
 			assertEquals(expected, render(template));
 		}
 

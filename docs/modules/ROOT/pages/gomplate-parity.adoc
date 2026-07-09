@@ -46,8 +46,8 @@ Status legend: ✅ complete · 🟡 partial (some methods) · ⬜ not started.
 
 | `coll`
 | 🟡 Partial
-| 2 / ~18
-| `Has Reverse` work. `Slice` is present but *not callable from templates* (variadic — see <<known-limitations>>). Missing `Append Prepend Uniq Flatten Merge Sort Keys Values Pick Omit Dict Index JSONPath GoSlice`.
+| 7 / ~18
+| `Has Reverse Append Prepend Uniq Set Unset`. `Slice` is present but *not callable* (variadic). Missing (all variadic or needing a JSONPath/JQ engine): `Flatten Merge Sort Keys Values Pick Omit Dict Index GoSlice JSONPath JQ`.
 
 | `data`
 | ⬜ Not started
@@ -185,13 +185,18 @@ The seed's original `Trim` had the arguments reversed; it now matches gomplate.
 | `Atoi`       | ✅ | `conv.Atoi s`
 |===
 
-.`coll` (2 working / ~18)
+.`coll` (7 working / ~18)
 [cols="1,1,3"]
 |===
 | Method | Status | gomplate signature
 
-| `Has`     | ✅ | `coll.Has list item`
+| `Has`     | ✅ | `coll.Has list item` (map → key presence)
 | `Reverse` | ✅ | `coll.Reverse list`
+| `Append`  | ✅ | `coll.Append v list`
+| `Prepend` | ✅ | `coll.Prepend v list`
+| `Uniq`    | ✅ | `coll.Uniq list` (keeps first-seen order)
+| `Set`     | ✅ | `coll.Set key value map`
+| `Unset`   | ✅ | `coll.Unset key map`
 | `Slice`   | 🟡 | `coll.Slice items...` — implemented but *not callable from templates* (variadic; see <<known-limitations>>). Use Sprig's `list` instead.
 |===
 
