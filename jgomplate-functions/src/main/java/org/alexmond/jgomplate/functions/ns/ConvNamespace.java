@@ -22,7 +22,7 @@ public final class ConvNamespace {
 	}
 
 	public String ToString(Object in) {
-		return Values.str(in);
+		return Values.toString(in);
 	}
 
 	/**
@@ -41,7 +41,7 @@ public final class ConvNamespace {
 
 	public String Join(Object list, Object sep) {
 		List<Object> items = Values.toList(list);
-		return items.stream().map(Values::str).collect(Collectors.joining(Values.str(sep)));
+		return items.stream().map(Values::toString).collect(Collectors.joining(Values.str(sep)));
 	}
 
 }

@@ -2,6 +2,8 @@ package org.alexmond.jgomplate.functions.ns;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 import org.alexmond.jgomplate.functions.Values;
 
@@ -30,10 +32,19 @@ public final class CollNamespace {
 		return new ArrayList<>(List.of((items != null) ? items : new Object[0]));
 	}
 
-	/** {@code true} if {@code list} contains {@code item}. */
-	public boolean Has(Object list, Object item) {
-		for (Object element : Values.toList(list)) {
-			if ((element != null) ? element.equals(item) : (item == null)) {
+	/**
+	 * gomplate {@code coll.Has}: for a map, whether {@code item} is a key; for a list or
+	 * array, whether {@code item} is an element (by value equality).
+	 * @param in the map, list, or array to test
+	 * @param item the key or element to look for
+	 * @return {@code true} when present
+	 */
+	public boolean Has(Object in, Object item) {
+		if (in instanceof Map<?, ?> map) {
+			return map.containsKey(item);
+		}
+		for (Object element : Values.toList(in)) {
+			if (Objects.equals(element, item)) {
 				return true;
 			}
 		}

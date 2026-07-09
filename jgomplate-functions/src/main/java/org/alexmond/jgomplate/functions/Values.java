@@ -1,9 +1,11 @@
 package org.alexmond.jgomplate.functions;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Small argument-coercion helpers shared by the gomplate namespace classes. Template
@@ -22,6 +24,25 @@ public final class Values {
 		return (value != null) ? String.valueOf(value) : "";
 	}
 
+	/**
+	 * Convert to a string the way gomplate's {@code conv.ToString} does: {@code null}
+	 * becomes the literal {@code "nil"}, a byte array is decoded as UTF-8, and everything
+	 * else is stringified. This differs from {@link #str(Object)} (which maps
+	 * {@code null} to the empty string) and is used where gomplate routes values through
+	 * {@code conv.ToString} — {@code conv.ToString} itself and {@code conv.Join}.
+	 * @param value the value to convert
+	 * @return the gomplate {@code conv.ToString} rendering
+	 */
+	public static String toString(Object value) {
+		if (value == null) {
+			return "nil";
+		}
+		if (value instanceof byte[] bytes) {
+			return new String(bytes, StandardCharsets.UTF_8);
+		}
+		return String.valueOf(value);
+	}
+
 	/** Coerce to an {@code int}, accepting numbers or numeric strings. */
 	public static int toInt(Object value) {
 		if (value instanceof Number number) {
@@ -31,19 +52,51 @@ public final class Values {
 	}
 
 	/**
-	 * Coerce to a {@code boolean} using gomplate's rules: real booleans pass through;
-	 * strings {@code "true"/"1"/"yes"/"on"} (case-insensitive) are true; a non-zero
-	 * number is true; everything else is false.
+	 * Coerce to a {@code boolean} using gomplate's {@code conv.ToBool} rules: real
+	 * booleans pass through; a number is true only when it equals {@code 1}; a string is
+	 * true only when it is (case-insensitively) {@code "1"}, {@code "t"}, {@code "true"},
+	 * or {@code "yes"}, or parses as a number equal to {@code 1}; everything else (nil,
+	 * {@code "on"}, {@code "42"}, other kinds) is false.
+	 * @param value the value to coerce
+	 * @return the gomplate boolean interpretation
 	 */
 	public static boolean toBool(Object value) {
 		if (value instanceof Boolean bool) {
 			return bool;
 		}
 		if (value instanceof Number number) {
-			return number.doubleValue() != 0;
+			return number.doubleValue() == 1.0d;
 		}
-		String text = str(value).trim().toLowerCase(java.util.Locale.ROOT);
-		return text.equals("true") || text.equals("1") || text.equals("yes") || text.equals("on");
+		if (value instanceof String text) {
+			return strToBool(text);
+		}
+		return false;
+	}
+
+	private static boolean strToBool(String value) {
+		String text = value.toLowerCase(Locale.ROOT);
+		if (text.equals("1") || text.equals("t") || text.equals("true") || text.equals("yes")) {
+			return true;
+		}
+		Double parsed = tryParseNumber(text);
+		return (parsed != null) && (parsed == 1.0d);
+	}
+
+	private static Double tryParseNumber(String text) {
+		try {
+			// Long.decode understands 0x hex, leading-0 octal, and signed decimal — the
+			// same set gomplate's strToFloat64 accepts before its plain-decimal fallback.
+			return (double) Long.decode(text);
+		}
+		catch (NumberFormatException ignored) {
+			// fall through to a float parse
+		}
+		try {
+			return Double.parseDouble(text);
+		}
+		catch (NumberFormatException ignored) {
+			return null;
+		}
 	}
 
 	/**
