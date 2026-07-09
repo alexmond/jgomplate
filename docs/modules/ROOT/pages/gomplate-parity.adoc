@@ -50,9 +50,9 @@ Status legend: ✅ complete · 🟡 partial (some methods) · ⬜ not started.
 | `Has Reverse Append Prepend Uniq Set Unset`. `Slice` is present but *not callable* (variadic). Missing (all variadic or needing a JSONPath/JQ engine): `Flatten Merge Sort Keys Values Pick Omit Dict Index GoSlice JSONPath JQ`.
 
 | `data`
-| ⬜ Not started
-| 0 / ~13
-| gomplate's most-used namespace (`data.JSON data.YAML data.ToJSON data.ToYAML data.CSV data.TOML …`). *Partly covered indirectly:* the datasource layer parses JSON/YAML, and Sprig's `toJson`/`fromJson`/`toYaml` are available non-namespaced. The `data.*` namespace itself is not registered.
+| 🟡 Partial
+| 6 / ~13
+| `JSON JSONArray YAML YAMLArray ToJSON ToYAML` (via Jackson). `ToJSON` is canonical (sorted keys, compact); `ToYAML` uses 2-space indent, sorted keys, no `---` marker. Missing `ToJSONPretty` (needs Go's `json.Indent` layout), `TOML`/`ToTOML`, the variadic `CSV`/`CSVByRow`/`CSVByColumn`/`ToCSV`, and `CUE`.
 
 | `base64`
 | ✅ Complete
@@ -262,6 +262,19 @@ returns whole-valued results as an integer so they render without a trailing
 | `IsValid` | ✅ | `uuid.IsValid in`
 | `Parse`   | ✅ | `uuid.Parse in` (standard / `urn:uuid:` / `{…}` / raw hex)
 | `V1`      | ⬜ | `uuid.V1` — no JVM time-based UUID generator
+|===
+
+.`data` (6 / ~13)
+[cols="1,1,3"]
+|===
+| Method | Status | gomplate signature
+
+| `JSON`       | ✅ | `data.JSON in` → map
+| `JSONArray`  | ✅ | `data.JSONArray in` → list
+| `YAML`       | ✅ | `data.YAML in` → map
+| `YAMLArray`  | ✅ | `data.YAMLArray in` → list
+| `ToJSON`     | ✅ | `data.ToJSON in` (canonical: sorted keys, compact)
+| `ToYAML`     | ✅ | `data.ToYAML in` (2-space indent, sorted keys)
 |===
 
 == Datasource parity

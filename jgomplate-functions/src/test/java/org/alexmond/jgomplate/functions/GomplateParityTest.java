@@ -262,6 +262,30 @@ class GomplateParityTest {
 
 	}
 
+	/** {@code data} namespace (structured-data parse/serialise). */
+	@Nested
+	class Data {
+
+		@ParameterizedTest
+		@CsvSource(delimiter = '|', value = {
+				// parse then index
+				"{{ index (data.JSON \"{\\\"a\\\":1,\\\"b\\\":2}\") \"a\" }}   | 1",
+				"{{ index (data.JSONArray \"[10,20,30]\") 1 }}                  | 20",
+				"{{ index (data.YAML \"foo: bar\") \"foo\" }}                    | bar",
+				"{{ index (data.YAMLArray \"- 10\\n- 20\") 1 }}                 | 20",
+				// ToJSON is canonical: keys sorted, compact
+				"{{ data.ToJSON (data.JSON \"{\\\"b\\\":2,\\\"a\\\":1}\") }}     | {\"a\":1,\"b\":2}",
+				"{{ data.ToJSON (data.JSONArray \"[2,1,3]\") }}                 | [2,1,3]",
+				// cross-format: YAML in, canonical JSON out (sorted)
+				"{{ data.ToJSON (data.YAML \"b: 2\\na: 1\") }}                  | {\"a\":1,\"b\":2}",
+				// ToYAML (trimmed to drop the trailing newline)
+				"{{ strings.TrimSpace (data.ToYAML (data.JSON \"{\\\"a\\\":1}\")) }} | a: 1" })
+		void parseAndSerialise(String template, String expected) {
+			assertEquals(expected, render(template));
+		}
+
+	}
+
 	/** {@code uuid} namespace. Cases mirror gomplate's internal/funcs/uuid_test.go. */
 	@Nested
 	class Uuid {

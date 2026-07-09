@@ -10,6 +10,7 @@ import org.alexmond.jgomplate.functions.ns.Base64Namespace;
 import org.alexmond.jgomplate.functions.ns.CollNamespace;
 import org.alexmond.jgomplate.functions.ns.ConvNamespace;
 import org.alexmond.jgomplate.functions.ns.CryptoNamespace;
+import org.alexmond.jgomplate.functions.ns.DataNamespace;
 import org.alexmond.jgomplate.functions.ns.MathNamespace;
 import org.alexmond.jgomplate.functions.ns.StringsNamespace;
 import org.alexmond.jgomplate.functions.ns.UuidNamespace;
@@ -47,6 +48,8 @@ public class GomplateFunctionProvider implements FunctionProvider {
 
 	private static final UuidNamespace UUID = new UuidNamespace();
 
+	private static final DataNamespace DATA = new DataNamespace();
+
 	@Override
 	public Map<String, Function> getFunctions(GoTemplate template) {
 		Map<String, Function> functions = new HashMap<>();
@@ -57,6 +60,7 @@ public class GomplateFunctionProvider implements FunctionProvider {
 		functions.put("base64", (args) -> BASE64);
 		functions.put("crypto", (args) -> CRYPTO);
 		functions.put("uuid", (args) -> UUID);
+		functions.put("data", (args) -> DATA);
 		return functions;
 	}
 

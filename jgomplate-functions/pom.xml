@@ -23,6 +23,16 @@
             <groupId>org.alexmond</groupId>
             <artifactId>gotmpl4j-core</artifactId>
         </dependency>
+        <!-- data namespace: JSON via jackson-databind, YAML via the dataformat module.
+             (Versions managed by the Spring Boot parent BOM, same as jgomplate-core.) -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
