@@ -379,13 +379,13 @@ datasource, context, and directory machinery are follow-up work.
 | `-t, --template`      | ⬜ | Nested/partial template registration not implemented.
 | `--left-delim` / `--right-delim` | ⬜ | Custom delimiters not exposed (blocked on the engine).
 | `--plugin`            | ⬜ | Config-file `plugins:` key parses; external-command execution not implemented.
-| `--missing-key`       | ⬜ | Config-file `missingKey:` key parses; not yet applied.
+| `--missing-key`       | ✅ `--missing-key` | `error` (default, matching gomplate), `zero`, `default`, `invalid`; also the `missingKey:` config key.
 |===
 
 NOTE: The full gomplate config-file schema (all `Config` keys) is parsed into the shared
 `GomplateConfig` model today; keys whose behaviour is not yet wired (datasources, context,
-delimiters, missing-key, plugins) are accepted and ignored until their follow-up issue
-lands, so a gomplate `.gomplate.yaml` loads without error.
+delimiters, plugins) are accepted and ignored until their follow-up issue lands, so a
+gomplate `.gomplate.yaml` loads without error.
 
 [#known-limitations]
 == Known engine limitations

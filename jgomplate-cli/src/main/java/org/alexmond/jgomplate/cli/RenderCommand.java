@@ -40,6 +40,10 @@ public class RenderCommand implements Callable<Integer> {
 	@Option(names = { "--config" }, description = "Config file (default: .gomplate.yaml).")
 	private String config;
 
+	@Option(names = { "--missing-key" },
+			description = "Behaviour on a missing map key: error (default), zero, default, invalid.")
+	private String missingKey;
+
 	@Option(names = { "-V", "--verbose" }, description = "Verbose output.")
 	private Boolean verbose;
 
@@ -77,6 +81,7 @@ public class RenderCommand implements Callable<Integer> {
 		cli.setIn(this.inline);
 		cli.setInputFiles(this.files);
 		cli.setOutputFiles(this.outputs);
+		cli.setMissingKey(this.missingKey);
 		cli.setExperimental(this.experimental);
 		return cli;
 	}

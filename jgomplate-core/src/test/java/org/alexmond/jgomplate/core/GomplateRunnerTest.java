@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.alexmond.jgomplate.core.config.GomplateConfig;
 
@@ -59,7 +60,7 @@ class GomplateRunnerTest {
 	void fileInputToFileOutput(@TempDir Path dir) throws Exception {
 		Path in = dir.resolve("in.tmpl");
 		Path out = dir.resolve("out.txt");
-		Files.writeString(in, "hello {{ .missing | default \"world\" }}");
+		Files.writeString(in, "hello {{ \"world\" }}");
 		GomplateConfig config = new GomplateConfig();
 		config.setInputFiles(List.of(in.toString()));
 		config.setOutputFiles(List.of(out.toString()));
@@ -67,6 +68,25 @@ class GomplateRunnerTest {
 		this.runner.run(config, NO_STDIN, new ByteArrayOutputStream());
 
 		assertEquals("hello world", Files.readString(out));
+	}
+
+	@Test
+	void defaultsToErrorMissingKey() {
+		GomplateConfig config = new GomplateConfig();
+		config.setIn("{{ .missing }}");
+		assertThrows(RuntimeException.class, () -> this.runner.run(config, NO_STDIN, new ByteArrayOutputStream()));
+	}
+
+	@Test
+	void missingKeyOverrideFromConfig() {
+		GomplateConfig config = new GomplateConfig();
+		config.setIn("[{{ .missing }}]");
+		config.setMissingKey("zero");
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+		this.runner.run(config, NO_STDIN, out);
+
+		assertEquals("[]", out.toString(StandardCharsets.UTF_8));
 	}
 
 	@Test
