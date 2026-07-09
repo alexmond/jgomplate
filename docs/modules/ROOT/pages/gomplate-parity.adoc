@@ -373,7 +373,7 @@ datasource, context, and directory machinery are follow-up work.
 | `--experimental`      | ✅ `--experimental` | Parsed into config (no gated features yet).
 | `-V, --verbose`       | ✅ `-V/--verbose` | Logs the resolved config file.
 | `-d, --datasource`    | ⬜ | Config-file `datasources:` key parses; not yet bound to the template.
-| `-c, --context`       | ⬜ | No context/`.` population from the CLI or config yet.
+| `-c, --context`       | ✅ `-c/--context` | `alias=URL` bound to `.`; alias `.` merges into the root. Local file schemes (json/yaml); also the `context:` config key.
 | `--input-dir` / `--output-dir` | ⬜ | No directory-tree rendering.
 | `--exec-pipe`         | ⬜ | Not implemented.
 | `-t, --template`      | ⬜ | Nested/partial template registration not implemented.
@@ -383,9 +383,9 @@ datasource, context, and directory machinery are follow-up work.
 |===
 
 NOTE: The full gomplate config-file schema (all `Config` keys) is parsed into the shared
-`GomplateConfig` model today; keys whose behaviour is not yet wired (datasources, context,
-delimiters, plugins) are accepted and ignored until their follow-up issue lands, so a
-gomplate `.gomplate.yaml` loads without error.
+`GomplateConfig` model today; keys whose behaviour is not yet wired (in-template
+datasources, delimiters, plugins) are accepted and ignored until their follow-up issue
+lands, so a gomplate `.gomplate.yaml` loads without error.
 
 [#known-limitations]
 == Known engine limitations
