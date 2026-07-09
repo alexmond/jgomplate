@@ -42,6 +42,11 @@
             <groupId>org.mindrot</groupId>
             <artifactId>jbcrypt</artifactId>
         </dependency>
+        <!-- coll.JQ — the jq language via jackson-jq (joni/jcodings transitively). -->
+        <dependency>
+            <groupId>net.thisptr</groupId>
+            <artifactId>jackson-jq</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

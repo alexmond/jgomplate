@@ -632,6 +632,22 @@ class GomplateParityTest {
 			assertEquals(expected, render(template));
 		}
 
+		@Test
+		void jq() {
+			// a single jq output is unwrapped
+			assertEquals("bar", render("{{ coll.JQ \".foo\" (dict \"foo\" \"bar\") }}"));
+			assertEquals("42", render("{{ coll.JQ \".a.b\" (dict \"a\" (dict \"b\" 42)) }}"));
+			// builtins: length, keys (sorted)
+			assertEquals("3", render("{{ coll.JQ \"length\" (list 1 2 3) }}"));
+			assertEquals("ab", render("{{ range coll.JQ \"keys\" (dict \"b\" 1 \"a\" 2) }}{{ . }}{{ end }}"));
+			// a transformed array is one output → index into it
+			assertEquals("4", render("{{ index (coll.JQ \"map(. * 2)\" (list 1 2 3)) 1 }}"));
+			// the iterator .[] yields many outputs → a list to range over
+			assertEquals("123", render("{{ range coll.JQ \".[]\" (list 1 2 3) }}{{ . }}{{ end }}"));
+			// pipe
+			assertEquals("2", render("{{ coll.JQ \".items | length\" (dict \"items\" (list 5 6)) }}"));
+		}
+
 	}
 
 }

@@ -46,8 +46,8 @@ Status legend: ✅ complete · 🟡 partial (some methods) · ⬜ not started.
 
 | `coll`
 | 🟡 Partial
-| 16 / ~18
-| `Has Reverse Append Prepend Uniq Set Unset Slice Keys Values Dict Merge Sort Index Pick Omit Flatten`. Missing only the three that need a JSONPath/JQ/reflect-slice engine: `GoSlice JSONPath JQ`.
+| 17 / ~18
+| `Has Reverse Append Prepend Uniq Set Unset Slice Keys Values Dict Merge Sort Index Pick Omit Flatten` plus `JQ` (the jq language via jackson-jq). Missing only `GoSlice` (reflect-style slicing) and `JSONPath` (gomplate's k8s dialect has no Java implementation).
 
 | `data`
 | 🟡 Partial
@@ -225,9 +225,9 @@ The seed's original `Trim` had the arguments reversed; it now matches gomplate.
 | `Pick`    | ✅ | `coll.Pick key… m`
 | `Omit`    | ✅ | `coll.Omit key… m` (or values… list)
 | `Flatten` | ✅ | `coll.Flatten [depth] list`
+| `JQ`      | ✅ | `coll.JQ expr in` (jq via jackson-jq)
 | `GoSlice` | ⬜ | needs `reflect`-style slicing
-| `JSONPath`| ⬜ | needs a JSONPath engine
-| `JQ`      | ⬜ | needs a JQ engine
+| `JSONPath`| ⬜ | k8s JSONPath dialect — no Java implementation
 |===
 
 .`math` (16 / 16)
@@ -388,12 +388,14 @@ of gomplate's CLI but none of the datasource, context, or directory machinery.
   Merge Sort Index Pick Omit Flatten`), `conv` (the `…s` plural forms), `strings`
   (`Indent RuneCount`), and `data` (`CSV CSVByRow CSVByColumn ToCSV`) are all done —
   no variadic function is blocked by the engine any more. The functions still absent
-  (`coll.JSONPath`/`JQ`, `data.CUE`, …) need an external engine, not a varargs fix.
-* **`coll.JSONPath` is deliberately deferred.** gomplate uses the Kubernetes JSONPath
-  dialect (`k8s.io/client-go/util/jsonpath` — leading-dot, brace-wrapped, k8s filter
-  syntax). No mature Java library implements that dialect; Jayway/Goessner JSONPath is
-  a different one (`$`-rooted, different filters), so a Jayway-backed `JSONPath` would
-  not match gomplate's expressions and is not shipped under the parity banner.
+  (`coll.JSONPath`, `data.CUE`, …) need an external engine, not a varargs fix.
+* **`coll.JQ` matches; `coll.JSONPath` is deferred — the difference is dialect risk.**
+  jq is one standardized language: gomplate's gojq and jackson-jq (what `JQ` uses here)
+  implement the same semantics, so ordinary expressions agree. JSONPath is not: gomplate
+  uses the Kubernetes dialect (`k8s.io/client-go/util/jsonpath` — leading-dot, brace-
+  wrapped, k8s filters), which no mature Java library implements; Jayway/Goessner is a
+  different dialect (`$`-rooted), so a Jayway-backed `JSONPath` would not match gomplate's
+  expressions and is not shipped under the parity banner.
 * **Namespace args arrive loosely typed** (`Object`) and are coerced through
   `functions.Values`. Coercion edge cases (e.g. numeric strings, nil handling) may
   differ from gomplate's Go type handling until each method has a parity test.

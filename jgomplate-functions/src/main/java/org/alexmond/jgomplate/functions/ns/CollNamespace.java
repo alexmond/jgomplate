@@ -9,6 +9,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import net.thisptr.jackson.jq.BuiltinFunctionLoader;
+import net.thisptr.jackson.jq.JsonQuery;
+import net.thisptr.jackson.jq.Scope;
+import net.thisptr.jackson.jq.Versions;
+import net.thisptr.jackson.jq.exception.JsonQueryException;
+
 import org.alexmond.jgomplate.functions.Values;
 
 /**
@@ -19,12 +27,18 @@ import org.alexmond.jgomplate.functions.Values;
  * <p>
  * The variadic functions ({@code Slice}, {@code Keys}, {@code Values}, {@code Dict},
  * {@code Merge}, {@code Sort}, {@code Index}, {@code Pick}, {@code Omit},
- * {@code Flatten}) are callable since gotmpl4j 1.2.1 unpacks varargs methods. Still
- * missing: {@code GoSlice}, {@code JSONPath}, and {@code JQ} (need a JSONPath/JQ engine).
+ * {@code Flatten}) are callable since gotmpl4j 1.2.1 unpacks varargs methods. {@code JQ}
+ * runs the jq language via jackson-jq (gomplate uses gojq — the same jq semantics). Still
+ * missing: {@code GoSlice} and {@code JSONPath} (gomplate's k8s JSONPath dialect has no
+ * Java implementation).
  */
 @SuppressWarnings("PMD.MethodNamingConventions") // method names mirror gomplate's Go API
 													// (PascalCase)
 public final class CollNamespace {
+
+	private static final ObjectMapper JQ_MAPPER = new ObjectMapper();
+
+	private static final Scope JQ_SCOPE = newJqScope();
 
 	/**
 	 * Build a list from the given items — {@code coll.Slice "a" "b" "c"}. Callable since
@@ -186,6 +200,42 @@ public final class CollNamespace {
 			list = args[1];
 		}
 		return flatten(list, depth);
+	}
+
+	/**
+	 * gomplate {@code coll.JQ expr in} — run the jq expression {@code expr} against
+	 * {@code in}. A single jq output is returned unwrapped; zero or many outputs return a
+	 * list. Runs the standard jq language via jackson-jq (gomplate uses gojq), so
+	 * ordinary expressions ({@code .a.b}, {@code .items[]}, {@code map(...)},
+	 * {@code select(...)}) behave identically.
+	 * @param expr the jq expression
+	 * @param in the input value (map, list, or scalar)
+	 * @return the jq output(s)
+	 */
+	public Object JQ(Object expr, Object in) {
+		try {
+			JsonQuery query = JsonQuery.compile(Values.toString(expr), Versions.JQ_1_7);
+			JsonNode input = JQ_MAPPER.valueToTree(in);
+			List<JsonNode> results = new ArrayList<>();
+			query.apply(Scope.newChildScope(JQ_SCOPE), input, results::add);
+			if (results.size() == 1) {
+				return JQ_MAPPER.convertValue(results.get(0), Object.class);
+			}
+			List<Object> out = new ArrayList<>(results.size());
+			for (JsonNode node : results) {
+				out.add(JQ_MAPPER.convertValue(node, Object.class));
+			}
+			return out;
+		}
+		catch (JsonQueryException ex) {
+			throw new IllegalArgumentException("jq: " + ex.getMessage(), ex);
+		}
+	}
+
+	private static Scope newJqScope() {
+		Scope scope = Scope.newEmptyScope();
+		BuiltinFunctionLoader.getInstance().loadFunctions(Versions.JQ_1_7, scope);
+		return scope;
 	}
 
 	/**
