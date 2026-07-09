@@ -2,6 +2,7 @@ package org.alexmond.jgomplate.core.datasource;
 
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -73,6 +74,28 @@ public final class Datasources {
 			return URI.create(v);
 		}
 		return Path.of(v).toUri();
+	}
+
+	/**
+	 * Validate a datasource config and resolve it to a loadable {@link Datasource}. Seed
+	 * scope: only local {@code file} datasources are accepted; any other scheme (or a
+	 * missing URL) fails with a clear message.
+	 * @param alias the datasource alias (for error messages)
+	 * @param config the datasource config
+	 * @return the resolved datasource
+	 * @throws IllegalArgumentException if the URL is missing or the scheme is unsupported
+	 */
+	public static Datasource resolve(String alias, DataSourceConfig config) {
+		if (config == null || config.getUrl() == null || config.getUrl().isBlank()) {
+			throw new IllegalArgumentException("datasource '" + alias + "' has no url");
+		}
+		URI uri = toUri(config.getUrl());
+		String scheme = (uri.getScheme() != null) ? uri.getScheme().toLowerCase(Locale.ROOT) : null;
+		if (!"file".equals(scheme)) {
+			throw new IllegalArgumentException("datasource '" + alias + "': unsupported scheme '" + scheme
+					+ "' (only local file datasources are supported)");
+		}
+		return new Datasource(alias, uri);
 	}
 
 }

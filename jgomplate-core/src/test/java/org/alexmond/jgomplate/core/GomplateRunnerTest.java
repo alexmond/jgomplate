@@ -126,6 +126,34 @@ class GomplateRunnerTest {
 	}
 
 	@Test
+	void datasourceFunctionReachableInTemplate(@TempDir Path dir) throws Exception {
+		Path data = dir.resolve("db.json");
+		Files.writeString(data, "{\"host\":\"localhost\"}");
+		GomplateConfig config = new GomplateConfig();
+		config.setIn("{{ (ds \"db\").host }}");
+		config.setDatasources(Map.of("db", dsConfig(data.toString())));
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+		this.runner.run(config, NO_STDIN, out);
+
+		assertEquals("localhost", out.toString(StandardCharsets.UTF_8));
+	}
+
+	@Test
+	void includeFunctionReturnsRawContent(@TempDir Path dir) throws Exception {
+		Path data = dir.resolve("snippet.txt");
+		Files.writeString(data, "verbatim");
+		GomplateConfig config = new GomplateConfig();
+		config.setIn("[{{ include \"s\" }}]");
+		config.setDatasources(Map.of("s", dsConfig(data.toString())));
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+		this.runner.run(config, NO_STDIN, out);
+
+		assertEquals("[verbatim]", out.toString(StandardCharsets.UTF_8));
+	}
+
+	@Test
 	void multipleFilesPairedByPosition(@TempDir Path dir) throws Exception {
 		Path in1 = dir.resolve("a.tmpl");
 		Path in2 = dir.resolve("b.tmpl");
