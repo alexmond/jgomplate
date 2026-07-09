@@ -8,6 +8,7 @@ import java.util.Map;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.dataformat.toml.TomlMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 
@@ -25,7 +26,8 @@ import org.alexmond.jgomplate.functions.Values;
  * no {@code ---} document marker. The {@code CSV}/{@code CSVByRow}/{@code CSVByColumn}
  * readers and {@code ToCSV} writer follow gomplate's own RFC4180 handling (optional
  * leading delimiter and header arguments; auto-named columns when the header is empty;
- * CRLF output). Still missing: {@code TOML}/{@code ToTOML} and {@code CUE}/{@code ToCUE}.
+ * CRLF output). {@code TOML}/{@code ToTOML} use Jackson's TOML dataformat. Still missing:
+ * {@code CUE}/{@code ToCUE} (needs a CUE engine).
  */
 @SuppressWarnings("PMD.MethodNamingConventions") // method names mirror gomplate's Go API
 													// (PascalCase)
@@ -36,6 +38,10 @@ public final class DataNamespace {
 
 	private static final YAMLMapper YAML_MAPPER = YAMLMapper.builder()
 		.disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER)
+		.enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
+		.build();
+
+	private static final TomlMapper TOML_MAPPER = TomlMapper.builder()
 		.enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
 		.build();
 
@@ -79,6 +85,16 @@ public final class DataNamespace {
 	/** gomplate {@code data.ToYAML in} — yaml with 2-space indent and sorted keys. */
 	public String ToYAML(Object in) {
 		return write(YAML_MAPPER, in);
+	}
+
+	/** gomplate {@code data.TOML in} — parse a TOML document into a map. */
+	public Map<String, Object> TOML(Object in) {
+		return readMap(TOML_MAPPER, Values.toString(in));
+	}
+
+	/** gomplate {@code data.ToTOML in} — serialise a value to TOML (sorted keys). */
+	public String ToTOML(Object in) {
+		return write(TOML_MAPPER, in);
 	}
 
 	/**

@@ -51,8 +51,8 @@ Status legend: ✅ complete · 🟡 partial (some methods) · ⬜ not started.
 
 | `data`
 | 🟡 Partial
-| 11 / ~13
-| `JSON JSONArray YAML YAMLArray ToJSON ToJSONPretty ToYAML` (via Jackson) plus the CSV set `CSV CSVByRow CSVByColumn ToCSV` (hand-rolled RFC4180, matching gomplate's arg shapes + CRLF output). `ToJSON` is canonical (sorted keys, compact); `ToJSONPretty` indents that like Go's `json.Indent`; `ToYAML` uses 2-space indent, sorted keys, no `---` marker. Missing only `TOML`/`ToTOML` and `CUE`/`ToCUE`.
+| 13 / ~13
+| `JSON JSONArray YAML YAMLArray ToJSON ToJSONPretty ToYAML TOML ToTOML` (via Jackson) plus the CSV set `CSV CSVByRow CSVByColumn ToCSV` (hand-rolled RFC4180, matching gomplate's arg shapes + CRLF output). `ToJSON` is canonical (sorted keys, compact); `ToJSONPretty` indents that like Go's `json.Indent`; `ToYAML` uses 2-space indent, sorted keys, no `---` marker; `ToTOML` uses Jackson's TOML output (sorted keys, literal-string quoting — valid TOML, though gomplate's quote style differs). Missing only `CUE`/`ToCUE`.
 
 | `base64`
 | ✅ Complete
@@ -312,7 +312,7 @@ without the trailing hash name) so the common call shapes work.
 | `ExpandEnv` | ✅ | `env.ExpandEnv s` (`$VAR` / `${VAR}`)
 |===
 
-.`data` (11 / ~13)
+.`data` (13 / ~13)
 [cols="1,1,3"]
 |===
 | Method | Status | gomplate signature
@@ -328,7 +328,8 @@ without the trailing hash name) so the common call shapes work.
 | `CSVByRow`     | ✅ | `data.CSVByRow [delim] [hdr] in` → list of maps
 | `CSVByColumn`  | ✅ | `data.CSVByColumn [delim] [hdr] in` → map of columns
 | `ToCSV`        | ✅ | `data.ToCSV [delim] rows` (RFC4180, CRLF)
-| `TOML`/`ToTOML`| ⬜ | needs a TOML parser
+| `TOML`         | ✅ | `data.TOML in` → map (Jackson TOML)
+| `ToTOML`       | ✅ | `data.ToTOML in` (sorted keys, literal-string quoting)
 | `CUE`/`ToCUE`  | ⬜ | needs a CUE engine
 |===
 
@@ -387,7 +388,7 @@ of gomplate's CLI but none of the datasource, context, or directory machinery.
   Merge Sort Index Pick Omit Flatten`), `conv` (the `…s` plural forms), `strings`
   (`Indent RuneCount`), and `data` (`CSV CSVByRow CSVByColumn ToCSV`) are all done —
   no variadic function is blocked by the engine any more. The functions still absent
-  (`strings.WordWrap`/`Abbrev`/`Slug`, `coll.JSONPath`/`JQ`, `data.TOML`/`CUE`, …) need
+  (`strings.WordWrap`/`Abbrev`/`Slug`, `coll.JSONPath`/`JQ`, `data.CUE`, …) need
   an external algorithm or engine, not a varargs fix.
 * **Namespace args arrive loosely typed** (`Object`) and are coerced through
   `functions.Values`. Coercion edge cases (e.g. numeric strings, nil handling) may

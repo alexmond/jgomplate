@@ -33,6 +33,10 @@
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-yaml</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-toml</artifactId>
+        </dependency>
         <!-- crypto.Bcrypt — self-contained jBCrypt (no Spring, no transitive deps). -->
         <dependency>
             <groupId>org.mindrot</groupId>

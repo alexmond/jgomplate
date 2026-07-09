@@ -476,6 +476,20 @@ class GomplateParityTest {
 			assertEquals("\"a,b\",c\r\n", render("{{ data.ToCSV (list (list \"a,b\" \"c\")) }}"));
 		}
 
+		@Test
+		void toml() {
+			// parse scalars
+			assertEquals("bar", render("{{ index (data.TOML \"foo = \\\"bar\\\"\") \"foo\" }}"));
+			assertEquals("42", render("{{ index (data.TOML \"n = 42\") \"n\" }}"));
+			// cross-format: TOML in, canonical JSON out (keys sorted)
+			assertEquals("{\"a\":1,\"b\":2}", render("{{ data.ToJSON (data.TOML \"b = 2\\na = 1\") }}"));
+			// ToTOML emits sorted keys; Jackson uses TOML literal (single-quoted) strings
+			assertEquals("foo = 'bar'",
+					render("{{ strings.TrimSpace (data.ToTOML (data.JSON \"{\\\"foo\\\":\\\"bar\\\"}\")) }}"));
+			// round-trip through ToTOML → TOML
+			assertEquals("9", render("{{ index (data.TOML (data.ToTOML (data.JSON \"{\\\"x\\\":9}\"))) \"x\" }}"));
+		}
+
 	}
 
 	/** {@code uuid} namespace. Cases mirror gomplate's internal/funcs/uuid_test.go. */
