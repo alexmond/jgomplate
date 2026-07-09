@@ -154,6 +154,20 @@ class GomplateRunnerTest {
 	}
 
 	@Test
+	void inputDirDelegatesToDirectoryRenderer(@TempDir Path base) throws Exception {
+		Path in = Files.createDirectories(base.resolve("in"));
+		Files.writeString(in.resolve("a.txt"), "{{ \"x\" | upper }}");
+		Path out = base.resolve("out");
+		GomplateConfig config = new GomplateConfig();
+		config.setInputDir(in.toString());
+		config.setOutputDir(out.toString());
+
+		this.runner.run(config, NO_STDIN, new ByteArrayOutputStream());
+
+		assertEquals("X", Files.readString(out.resolve("a.txt")));
+	}
+
+	@Test
 	void partialTemplateInvokableFromMain(@TempDir Path dir) throws Exception {
 		Path partial = dir.resolve("greeting.tmpl");
 		Files.writeString(partial, "Hi {{ . }}");

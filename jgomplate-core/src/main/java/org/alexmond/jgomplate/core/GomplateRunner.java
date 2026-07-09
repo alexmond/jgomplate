@@ -28,7 +28,8 @@ import org.alexmond.jgomplate.core.datasource.TemplateResolver;
  * gomplate's {@code error}), {@code context} datasources bound to the template root, and
  * the {@code datasource}/{@code ds}/{@code include} functions over the configured
  * {@code datasources}, and named partial {@code templates} invokable via {@code {{
- * template "name" . }}}. Directory rendering, delimiters and post-exec are wired by
+ * template "name" . }}}, and directory rendering ({@code inputDir} to {@code outputDir}/
+ * {@code outputMap}) via {@link DirectoryRenderer}. Delimiters and post-exec are wired by
  * follow-up issues; unrelated config keys are accepted but ignored here.
  */
 public class GomplateRunner {
@@ -44,6 +45,8 @@ public class GomplateRunner {
 
 	private final TemplateResolver templateResolver;
 
+	private final DirectoryRenderer directoryRenderer;
+
 	public GomplateRunner() {
 		this(new GomplateEngine(), new ContextResolver(), new TemplateResolver());
 	}
@@ -56,6 +59,7 @@ public class GomplateRunner {
 		this.engine = engine;
 		this.contextResolver = contextResolver;
 		this.templateResolver = templateResolver;
+		this.directoryRenderer = new DirectoryRenderer(engine);
 	}
 
 	/**
@@ -71,6 +75,11 @@ public class GomplateRunner {
 		Map<String, Object> context = this.contextResolver.resolve(config.getContext());
 		Map<String, Function> functions = new DatasourceFunctions(config.getDatasources()).functions();
 		Map<String, String> partials = this.templateResolver.resolve(config.getTemplates());
+
+		if (config.getInputDir() != null && !config.getInputDir().isBlank()) {
+			this.directoryRenderer.render(config, context, missingKey, functions, partials);
+			return;
+		}
 
 		if (config.getIn() != null) {
 			String rendered = this.engine.render(config.getIn(), context, missingKey, functions, partials);

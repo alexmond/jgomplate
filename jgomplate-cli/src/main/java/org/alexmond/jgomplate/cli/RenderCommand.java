@@ -22,11 +22,12 @@ import org.alexmond.jgomplate.core.datasource.Datasources;
  * wins), and renders through the {@link GomplateRunner}.
  *
  * <p>
- * Seed CLI surface (issue #7): inline {@code -i}, template files {@code -f} and output
- * files {@code -o} (repeatable, {@code -} = stdin/stdout), plus {@code --config},
- * {@code -V} and {@code --experimental}. Datasources ({@code -d}), context ({@code -c}),
- * nested templates ({@code -t}), missing-key handling and directory input are wired by
- * follow-up issues.
+ * Covers input/output ({@code -i}/{@code -f}/{@code -o}, {@code -} = stdin/stdout),
+ * {@code --config}, {@code --missing-key}, context ({@code -c}), datasources
+ * ({@code -d}), partial templates ({@code -t}), directory rendering ({@code --input-dir}
+ * / {@code --output-dir} / {@code --output-map} / {@code --chmod} with
+ * {@code --include}/{@code --exclude}/{@code --exclude-processing} globs), and
+ * {@code -V}/{@code --experimental}. Custom delimiters and plugins are follow-up work.
  */
 @Component
 @Command(name = "jgomplate", mixinStandardHelpOptions = true, description = "Render gomplate/Go templates on the JVM.")
@@ -60,6 +61,28 @@ public class RenderCommand implements Callable<Integer> {
 			description = "Named partial 'name=URL' invoked via {{ template \"name\" . }}. Repeatable.")
 	private List<String> templates;
 
+	@Option(names = { "--input-dir" }, description = "Directory of templates to render recursively.")
+	private String inputDir;
+
+	@Option(names = { "--output-dir" }, description = "Output directory for --input-dir (default: .).")
+	private String outputDir;
+
+	@Option(names = { "--output-map" }, description = "Template producing each output path (.in = input path).")
+	private String outputMap;
+
+	@Option(names = { "--chmod" }, description = "Octal mode applied to written files (e.g. 0644).")
+	private String chmod;
+
+	@Option(names = { "--exclude" }, description = "Glob of files to skip during --input-dir. Repeatable.")
+	private List<String> excludes;
+
+	@Option(names = { "--include" }, description = "Glob of files to include during --input-dir. Repeatable.")
+	private List<String> includes;
+
+	@Option(names = { "--exclude-processing" },
+			description = "Glob of files copied verbatim (not rendered). Repeatable.")
+	private List<String> excludeProcessing;
+
 	@Option(names = { "-V", "--verbose" }, description = "Verbose output.")
 	private Boolean verbose;
 
@@ -80,8 +103,8 @@ public class RenderCommand implements Callable<Integer> {
 					"jgomplate: config=" + ((this.config != null) ? this.config : ConfigLoader.DEFAULT_CONFIG_FILE));
 		}
 
-		boolean noInput = merged.getIn() == null
-				&& (merged.getInputFiles() == null || merged.getInputFiles().isEmpty());
+		boolean noInput = merged.getIn() == null && (merged.getInputFiles() == null || merged.getInputFiles().isEmpty())
+				&& (merged.getInputDir() == null || merged.getInputDir().isBlank());
 		if (noInput && System.console() != null) {
 			System.err.println("Provide a template with --file <path>, --in <string>, or on stdin.");
 			return 2;
@@ -102,6 +125,13 @@ public class RenderCommand implements Callable<Integer> {
 		cli.setContext(parseDatasources(this.contexts));
 		cli.setDatasources(parseDatasources(this.datasources));
 		cli.setTemplates(parseDatasources(this.templates));
+		cli.setInputDir(this.inputDir);
+		cli.setOutputDir(this.outputDir);
+		cli.setOutputMap(this.outputMap);
+		cli.setChmod(this.chmod);
+		cli.setExcludes(this.excludes);
+		cli.setIncludes(this.includes);
+		cli.setExcludeProcessing(this.excludeProcessing);
 		return cli;
 	}
 
