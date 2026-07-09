@@ -34,3 +34,6 @@ build/
 
 # maven-shade-plugin artifact
 dependency-reduced-pom.xml
+
+# Local prompt-coach tooling state (not part of the project)
+.claude/prompt-coach/
