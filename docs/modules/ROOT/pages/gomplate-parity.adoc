@@ -70,9 +70,9 @@ Status legend: ✅ complete · 🟡 partial (some methods) · ⬜ not started.
 | `Now Parse ParseDuration Since Unix ZoneName …` plus the duration constants.
 
 | `crypto`
-| ⬜ Not started
-| 0 / ~25
-| `SHA1..SHA512 Bcrypt PBKDF2 RSA*/ECDSA* EncryptAES DecryptAES WPAPSK …`.
+| 🟡 Partial
+| 7 / ~25
+| The SHA hash digests — `SHA1 SHA224 SHA256 SHA384 SHA512 SHA512_224 SHA512_256` (lowercase hex). Missing `Bcrypt PBKDF2`, the RSA/ECDSA/AES helpers, `WPAPSK`, and the `*Bytes` digest variants.
 
 | `regexp`
 | ⬜ Not started
@@ -231,6 +231,20 @@ returns whole-valued results as an integer so they render without a trailing
 | `Encode`      | ✅ | `base64.Encode in` (standard, padded)
 | `Decode`      | ✅ | `base64.Decode in` (std → URL-safe fallback)
 | `DecodeBytes` | ✅ | `base64.DecodeBytes in`
+|===
+
+.`crypto` (7 / ~25 — SHA hashes)
+[cols="1,1,3"]
+|===
+| Method | Status | gomplate signature
+
+| `SHA1`       | ✅ | `crypto.SHA1 input` (lowercase hex)
+| `SHA224`     | ✅ | `crypto.SHA224 input`
+| `SHA256`     | ✅ | `crypto.SHA256 input`
+| `SHA384`     | ✅ | `crypto.SHA384 input`
+| `SHA512`     | ✅ | `crypto.SHA512 input`
+| `SHA512_224` | ✅ | `crypto.SHA512_224 input`
+| `SHA512_256` | ✅ | `crypto.SHA512_256 input`
 |===
 
 == Datasource parity

@@ -147,6 +147,24 @@ public final class Values {
 	}
 
 	/**
+	 * Convert to bytes the way gomplate's {@code toBytes} helper does: {@code null}
+	 * yields an empty array, a {@code byte[]} passes through, and everything else is
+	 * rendered via {@link #toString(Object)} and encoded as UTF-8. Shared by the
+	 * {@code base64} and {@code crypto} namespaces.
+	 * @param value the value to convert
+	 * @return the byte representation
+	 */
+	public static byte[] toBytes(Object value) {
+		if (value == null) {
+			return new byte[0];
+		}
+		if (value instanceof byte[] bytes) {
+			return bytes;
+		}
+		return toString(value).getBytes(StandardCharsets.UTF_8);
+	}
+
+	/**
 	 * Normalize a list-ish argument (List, array, or single value) into a {@link List}.
 	 */
 	public static List<Object> toList(Object value) {

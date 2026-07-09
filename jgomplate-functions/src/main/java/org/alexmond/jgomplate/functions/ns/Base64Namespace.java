@@ -21,7 +21,7 @@ public final class Base64Namespace {
 
 	/** gomplate {@code base64.Encode in} — standard, padded base64. */
 	public String Encode(Object in) {
-		return Base64.getEncoder().encodeToString(toBytes(in));
+		return Base64.getEncoder().encodeToString(Values.toBytes(in));
 	}
 
 	/**
@@ -36,16 +36,6 @@ public final class Base64Namespace {
 	 */
 	public byte[] DecodeBytes(Object in) {
 		return decode(Values.toString(in));
-	}
-
-	private static byte[] toBytes(Object in) {
-		if (in == null) {
-			return new byte[0];
-		}
-		if (in instanceof byte[] bytes) {
-			return bytes;
-		}
-		return Values.toString(in).getBytes(StandardCharsets.UTF_8);
 	}
 
 	private static byte[] decode(String in) {

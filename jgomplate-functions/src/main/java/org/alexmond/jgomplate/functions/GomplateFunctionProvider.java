@@ -9,6 +9,7 @@ import org.alexmond.gotmpl4j.GoTemplate;
 import org.alexmond.jgomplate.functions.ns.Base64Namespace;
 import org.alexmond.jgomplate.functions.ns.CollNamespace;
 import org.alexmond.jgomplate.functions.ns.ConvNamespace;
+import org.alexmond.jgomplate.functions.ns.CryptoNamespace;
 import org.alexmond.jgomplate.functions.ns.MathNamespace;
 import org.alexmond.jgomplate.functions.ns.StringsNamespace;
 
@@ -41,6 +42,8 @@ public class GomplateFunctionProvider implements FunctionProvider {
 
 	private static final Base64Namespace BASE64 = new Base64Namespace();
 
+	private static final CryptoNamespace CRYPTO = new CryptoNamespace();
+
 	@Override
 	public Map<String, Function> getFunctions(GoTemplate template) {
 		Map<String, Function> functions = new HashMap<>();
@@ -49,6 +52,7 @@ public class GomplateFunctionProvider implements FunctionProvider {
 		functions.put("coll", (args) -> COLL);
 		functions.put("math", (args) -> MATH);
 		functions.put("base64", (args) -> BASE64);
+		functions.put("crypto", (args) -> CRYPTO);
 		return functions;
 	}
 
