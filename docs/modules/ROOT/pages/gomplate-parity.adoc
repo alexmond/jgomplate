@@ -62,7 +62,7 @@ Status legend: ✅ complete · 🟡 partial (some methods) · ⬜ not started.
 | `math`
 | 🟡 Partial
 | 11 / ~16
-| `Abs Sub Div Rem Pow Ceil Floor Round IsInt IsFloat IsNum`. The remaining five — `Add Mul Max Min Seq` — are *variadic* and blocked by the varargs-method gap (see <<known-limitations>>); use Sprig's `add`/`mul`/`max`/`min` until then.
+| Full: `Abs Sub Div Rem Pow Ceil Floor Round IsInt IsFloat IsNum` plus the variadic `Add Mul Max Min Seq` (callable since gotmpl4j 1.2.1 unpacks varargs methods).
 
 | `time`
 | ⬜ Not started
@@ -216,11 +216,11 @@ The seed's original `Trim` had the arguments reversed; it now matches gomplate.
 | `Ceil`    | ✅ | `math.Ceil n`
 | `Floor`   | ✅ | `math.Floor n`
 | `Round`   | ✅ | `math.Round n` (half away from zero)
-| `Add`     | 🟡 | `math.Add n...` — variadic, *not callable* (see <<known-limitations>>)
-| `Mul`     | 🟡 | `math.Mul n...` — variadic, *not callable*
-| `Max`     | 🟡 | `math.Max a n...` — variadic, *not callable*
-| `Min`     | 🟡 | `math.Min a n...` — variadic, *not callable*
-| `Seq`     | 🟡 | `math.Seq n...` — variadic, *not callable*
+| `Add`     | ✅ | `math.Add n...` (variadic; integral unless any arg is float)
+| `Mul`     | ✅ | `math.Mul n...` (variadic; integral unless any arg is float)
+| `Max`     | ✅ | `math.Max a n...` (variadic tail)
+| `Min`     | ✅ | `math.Min a n...` (variadic tail)
+| `Seq`     | ✅ | `math.Seq [start] end [step]` (inclusive integer sequence)
 |===
 
 NOTE: gomplate preserves numeric type — `Abs`/`Sub`/`Pow` stay integral for
@@ -343,13 +343,13 @@ of gomplate's CLI but none of the datasource, context, or directory machinery.
 [#known-limitations]
 == Known engine limitations
 
-* **Variadic namespace methods are not callable from templates.** gotmpl4j's method
-  executor matches by exact parameter count and does not unpack Java varargs, so a
-  variadic method such as `coll.Slice(Object...)` resolves to nothing when invoked
-  from a template. Build lists with Sprig's variadic `list` function until upstream
-  varargs-method support lands in
-  https://github.com/alexmond/gotmpl4j[gotmpl4j]. This is the main known gap and it
-  is fixed upstream, never worked around in this repo.
+* **Variadic namespace methods now work (gotmpl4j 1.2.1+).** Earlier versions matched
+  methods by exact parameter count and did not unpack Java varargs, so a variadic
+  method such as `math.Add(Object...)` resolved to nothing. gotmpl4j 1.2.1 unpacks
+  varargs, so `Object...` namespace methods are callable directly — `math` (`Add Mul
+  Max Min Seq`) is done. The remaining variadic functions in `coll`, `conv` (the `…s`
+  plural forms), `strings`, and `data` (`CSV`) are simply *not yet ported*, no longer
+  blocked by the engine.
 * **Namespace args arrive loosely typed** (`Object`) and are coerced through
   `functions.Values`. Coercion edge cases (e.g. numeric strings, nil handling) may
   differ from gomplate's Go type handling until each method has a parity test.

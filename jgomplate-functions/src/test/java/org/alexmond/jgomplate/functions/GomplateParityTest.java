@@ -210,6 +210,31 @@ class GomplateParityTest {
 			assertEquals(expected, render(template));
 		}
 
+		@ParameterizedTest
+		@CsvSource(delimiter = '|', value = { "{{ math.Add 1 2 }}         | 3", "{{ math.Add 1 2 3 4 5 }} | 15",
+				"{{ math.Add 8 }}           | 8", "{{ math.Add 1 2.5 }}     | 3.5", "{{ math.Add 1 2 3 4.0 }}   | 10",
+				"{{ math.Add -1 -2 -3 }}  | -6",
+				// Mul: integral unless any arg is a float
+				"{{ math.Mul 2 3 4 }}       | 24", "{{ math.Mul 5 }}         | 5", "{{ math.Mul 2 2.5 }}       | 5",
+				"{{ math.Mul -2 3 }}      | -6",
+				// Max / Min: mandatory first arg + variadic tail
+				"{{ math.Max 1 2 3 }}       | 3", "{{ math.Max 5 }}         | 5", "{{ math.Max 1 5.5 2 }}     | 5.5",
+				"{{ math.Min 3 2 1 }}     | 1", "{{ math.Min 5 }}           | 5", "{{ math.Min 3 1.5 2 }}   | 1.5" })
+		void reducers(String template, String expected) {
+			assertEquals(expected, render(template));
+		}
+
+		@ParameterizedTest
+		@CsvSource(delimiter = '|',
+				value = { "{{ range math.Seq 3 }}{{.}} {{end}}       | '1 2 3 '",
+						"{{ range math.Seq 2 4 }}{{.}} {{end}}     | '2 3 4 '",
+						"{{ range math.Seq 1 6 2 }}{{.}} {{end}}   | '1 3 5 '",
+						"{{ range math.Seq 5 1 }}{{.}} {{end}}     | '5 4 3 2 1 '",
+						"{{ range math.Seq 1 10 0 }}{{.}} {{end}}  | ''" })
+		void seq(String template, String expected) {
+			assertEquals(expected, render(template));
+		}
+
 	}
 
 	/**

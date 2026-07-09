@@ -2,6 +2,8 @@ package org.alexmond.jgomplate.functions.ns;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.alexmond.jgomplate.functions.Values;
 
@@ -10,11 +12,10 @@ import org.alexmond.jgomplate.functions.Values;
  * {@code math.Abs}, etc. Method names mirror gomplate's Go API (PascalCase).
  *
  * <p>
- * Only the unary/binary functions are exposed: gomplate's {@code Add}, {@code Mul},
- * {@code Max}, {@code Min}, and {@code Seq} are variadic, and variadic namespace methods
- * are not yet callable through gotmpl4j (it matches methods by exact parameter count and
- * does not unpack Java varargs). Build sums/products with those once upstream varargs
- * support lands.
+ * The variadic reducers {@code Add}, {@code Mul}, {@code Max}, {@code Min}, and the
+ * sequence generator {@code Seq} are exposed as Java varargs; gotmpl4j 1.2.1+ unpacks
+ * them into the method call. {@code Add}/{@code Mul} stay integral unless any argument is
+ * a float; {@code Max}/{@code Min} take a mandatory first argument plus a variadic tail.
  *
  * <p>
  * Numeric type is preserved the way gomplate does: {@code Abs}/{@code Sub}/{@code Pow}
@@ -26,6 +27,121 @@ import org.alexmond.jgomplate.functions.Values;
 @SuppressWarnings("PMD.MethodNamingConventions") // method names mirror gomplate's Go API
 													// (PascalCase)
 public final class MathNamespace {
+
+	public Object Add(Object... nums) {
+		if (anyFloat(nums)) {
+			double sum = 0;
+			for (Object n : nums) {
+				sum += Values.toDouble(n);
+			}
+			return normalize(sum);
+		}
+		long sum = 0;
+		for (Object n : nums) {
+			sum += Values.toLong(n);
+		}
+		return sum;
+	}
+
+	public Object Mul(Object... nums) {
+		if (anyFloat(nums)) {
+			double product = 1;
+			for (Object n : nums) {
+				product *= Values.toDouble(n);
+			}
+			return normalize(product);
+		}
+		long product = 1;
+		for (Object n : nums) {
+			product *= Values.toLong(n);
+		}
+		return product;
+	}
+
+	public Object Max(Object first, Object... rest) {
+		if (IsFloat(first) || anyFloat(rest)) {
+			double m = Values.toDouble(first);
+			for (Object n : rest) {
+				m = Math.max(m, Values.toDouble(n));
+			}
+			return normalize(m);
+		}
+		long m = Values.toLong(first);
+		for (Object n : rest) {
+			m = Math.max(m, Values.toLong(n));
+		}
+		return m;
+	}
+
+	public Object Min(Object first, Object... rest) {
+		if (IsFloat(first) || anyFloat(rest)) {
+			double m = Values.toDouble(first);
+			for (Object n : rest) {
+				m = Math.min(m, Values.toDouble(n));
+			}
+			return normalize(m);
+		}
+		long m = Values.toLong(first);
+		for (Object n : rest) {
+			m = Math.min(m, Values.toLong(n));
+		}
+		return m;
+	}
+
+	/**
+	 * gomplate {@code math.Seq [start] end [step]} — an inclusive integer sequence.
+	 * {@code start} and {@code step} default to 1; a mis-signed step is corrected and a
+	 * zero step yields an empty list, matching gomplate.
+	 */
+	public List<Long> Seq(Object... args) {
+		long start = 1;
+		long end;
+		long step = 1;
+		switch (args.length) {
+			case 1 -> {
+				end = Values.toLong(args[0]);
+			}
+			case 2 -> {
+				start = Values.toLong(args[0]);
+				end = Values.toLong(args[1]);
+			}
+			case 3 -> {
+				start = Values.toLong(args[0]);
+				end = Values.toLong(args[1]);
+				step = Values.toLong(args[2]);
+			}
+			default -> throw new IllegalArgumentException("expected 1, 2, or 3 arguments, got " + args.length);
+		}
+		return seq(start, end, step);
+	}
+
+	private static List<Long> seq(long start, long end, long step) {
+		List<Long> result = new ArrayList<>();
+		if (step == 0) {
+			return result;
+		}
+		if ((end < start && step > 0) || (end > start && step < 0)) {
+			step = -step;
+		}
+		// align the end exactly so the walk terminates
+		end -= (end - start) % step;
+		long last = start;
+		result.add(last);
+		while (last != end) {
+			last += step;
+			result.add(last);
+		}
+		return result;
+	}
+
+	private boolean anyFloat(Object... nums) {
+		for (Object n : nums) {
+			if (IsFloat(n)) {
+				return true;
+			}
+		}
+		return false;
+	}
 
 	public boolean IsInt(Object n) {
 		if (n instanceof Long || n instanceof Integer || n instanceof Short || n instanceof Byte
