@@ -357,25 +357,35 @@ extension.
 
 == CLI parity
 
-The `jgomplate` command renders a single template. It covers the input/output core
-of gomplate's CLI but none of the datasource, context, or directory machinery.
+The `jgomplate` command is config-driven: it builds a config from the flags actually
+passed and overlays it on a `.gomplate.yaml` file (CLI wins), mirroring gomplate's
+`Config.MergeFrom` precedence. It covers the input/output core plus config-file loading;
+datasource, context, and directory machinery are follow-up work.
 
 [cols="1,1,3"]
 |===
 | gomplate flag | jgomplate | Notes
 
-| `-f, --file`          | ✅ `-f/--file` | Single template file.
+| `-f, --file`          | ✅ `-f/--file` | Template file(s), repeatable; `-` = stdin.
 | `-i, --in`            | ✅ `-i/--in`   | Inline template string.
-| `-o, --out`           | ✅ `-o/--out`  | Output file; defaults to stdout.
-| `-d, --datasource`    | ⬜ | Not wired to the CLI yet.
-| `-c, --context`       | ⬜ | No context/`.` population from the CLI.
+| `-o, --out`           | ✅ `-o/--out`  | Output file(s), repeatable, paired with `-f`; `-` = stdout.
+| `--config`            | ✅ `--config`  | Config file; precedence `--config` > `$GOMPLATE_CONFIG` > `.gomplate.yaml` (default-missing skipped, explicit-missing errors).
+| `--experimental`      | ✅ `--experimental` | Parsed into config (no gated features yet).
+| `-V, --verbose`       | ✅ `-V/--verbose` | Logs the resolved config file.
+| `-d, --datasource`    | ⬜ | Config-file `datasources:` key parses; not yet bound to the template.
+| `-c, --context`       | ⬜ | No context/`.` population from the CLI or config yet.
 | `--input-dir` / `--output-dir` | ⬜ | No directory-tree rendering.
 | `--exec-pipe`         | ⬜ | Not implemented.
 | `-t, --template`      | ⬜ | Nested/partial template registration not implemented.
-| `--left-delim` / `--right-delim` | ⬜ | Custom delimiters not exposed.
-| `--plugin`            | ⬜ | External-command plugins not implemented.
-| `--missing-key`       | ⬜ | Missing-key behaviour not configurable.
+| `--left-delim` / `--right-delim` | ⬜ | Custom delimiters not exposed (blocked on the engine).
+| `--plugin`            | ⬜ | Config-file `plugins:` key parses; external-command execution not implemented.
+| `--missing-key`       | ⬜ | Config-file `missingKey:` key parses; not yet applied.
 |===
+
+NOTE: The full gomplate config-file schema (all `Config` keys) is parsed into the shared
+`GomplateConfig` model today; keys whose behaviour is not yet wired (datasources, context,
+delimiters, missing-key, plugins) are accepted and ignored until their follow-up issue
+lands, so a gomplate `.gomplate.yaml` loads without error.
 
 [#known-limitations]
 == Known engine limitations
