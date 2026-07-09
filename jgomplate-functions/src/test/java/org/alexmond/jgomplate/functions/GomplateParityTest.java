@@ -449,6 +449,41 @@ class GomplateParityTest {
 			assertEquals(expected, render(template));
 		}
 
+		@ParameterizedTest
+		@CsvSource(delimiter = '|', value = { "{{ range coll.Slice 1 2 3 }}{{ . }}{{ end }}                 | 123",
+				// Keys/Values: per-map sorted-key order
+				"{{ range coll.Keys (dict \"c\" 3 \"a\" 1 \"b\" 2) }}{{ . }}{{ end }}     | abc",
+				"{{ range coll.Values (dict \"c\" 30 \"a\" 10 \"b\" 20) }}{{ . }} {{ end }} | '10 20 30 '",
+				// Dict: alternating pairs; a trailing bare key maps to ""
+				"{{ index (coll.Dict \"a\" 1 \"b\" 2) \"b\" }}                   | 2",
+				"{{ index (coll.Dict \"a\" 1 \"x\") \"x\" }}                     | ''",
+				// Merge: left-most (dst) wins; keys only in src are pulled in
+				"{{ index (coll.Merge (dict \"a\" 1) (dict \"a\" 2 \"b\" 3)) \"a\" }} | 1",
+				"{{ index (coll.Merge (dict \"a\" 1) (dict \"a\" 2 \"b\" 3)) \"b\" }} | 3" })
+		void mapBuilders(String template, String expected) {
+			assertEquals(expected, render(template));
+		}
+
+		@ParameterizedTest
+		@CsvSource(delimiter = '|',
+				value = { "{{ range coll.Sort (list 3 1 2) }}{{ . }}{{ end }}          | 123",
+						"{{ range coll.Sort (list \"b\" \"a\" \"c\") }}{{ . }}{{ end }}          | abc",
+						// Index: indexes come first, the item is the last argument
+						"{{ coll.Index 1 (list \"a\" \"b\" \"c\") }}                     | b",
+						"{{ coll.Index \"x\" (dict \"x\" 42) }}                          | 42",
+						"{{ coll.Index 0 \"y\" (list (dict \"y\" 9)) }}                  | 9",
+						// Pick/Omit: keys first, map last
+						"{{ len (coll.Pick \"a\" \"c\" (dict \"a\" 1 \"b\" 2 \"c\" 3)) }}   | 2",
+						"{{ index (coll.Pick \"a\" \"c\" (dict \"a\" 1 \"b\" 2 \"c\" 3)) \"a\" }} | 1",
+						"{{ len (coll.Omit \"a\" (dict \"a\" 1 \"b\" 2 \"c\" 3)) }}        | 2",
+						"{{ coll.Has (coll.Omit \"a\" (dict \"a\" 1 \"b\" 2)) \"a\" }}    | false",
+						// Flatten: full by default, or limited by an explicit depth
+						"{{ range coll.Flatten (list 1 (list 2 3) (list 4 (list 5))) }}{{ . }}{{ end }} | 12345",
+						"{{ len (coll.Flatten 1 (list 1 (list 2 (list 3)))) }}           | 3" })
+		void sortIndexPickOmitFlatten(String template, String expected) {
+			assertEquals(expected, render(template));
+		}
+
 	}
 
 }

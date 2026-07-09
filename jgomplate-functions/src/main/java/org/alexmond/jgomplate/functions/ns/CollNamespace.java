@@ -1,6 +1,9 @@
 package org.alexmond.jgomplate.functions.ns;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,23 +17,175 @@ import org.alexmond.jgomplate.functions.Values;
  * gomplate's Go API (PascalCase).
  *
  * <p>
- * Seed subset of gomplate's full {@code coll} namespace.
+ * The variadic functions ({@code Slice}, {@code Keys}, {@code Values}, {@code Dict},
+ * {@code Merge}, {@code Sort}, {@code Index}, {@code Pick}, {@code Omit},
+ * {@code Flatten}) are callable since gotmpl4j 1.2.1 unpacks varargs methods. Still
+ * missing: {@code GoSlice}, {@code JSONPath}, and {@code JQ} (need a JSONPath/JQ engine).
  */
 @SuppressWarnings("PMD.MethodNamingConventions") // method names mirror gomplate's Go API
 													// (PascalCase)
 public final class CollNamespace {
 
 	/**
-	 * Build a list from the given items — {@code coll.Slice "a" "b" "c"}.
-	 *
-	 * <p>
-	 * NOTE: variadic namespace <em>methods</em> are not yet callable from templates —
-	 * gotmpl4j's executor matches methods by exact parameter count and does not unpack
-	 * Java varargs. Until that lands upstream, use Sprig's variadic {@code list} function
-	 * to build lists. The method is correct Java and works via direct calls.
+	 * Build a list from the given items — {@code coll.Slice "a" "b" "c"}. Callable since
+	 * gotmpl4j 1.2.1 unpacks varargs methods.
 	 */
 	public List<Object> Slice(Object... items) {
 		return new ArrayList<>(List.of((items != null) ? items : new Object[0]));
+	}
+
+	/**
+	 * gomplate {@code coll.Keys m...} — the keys of one or more maps, each map's keys in
+	 * sorted order, concatenated left to right.
+	 */
+	public List<String> Keys(Object... maps) {
+		if (maps.length == 0) {
+			throw new IllegalArgumentException("need at least one argument");
+		}
+		List<String> keys = new ArrayList<>();
+		for (Object m : maps) {
+			keys.addAll(sortedKeys(m));
+		}
+		return keys;
+	}
+
+	/**
+	 * gomplate {@code coll.Values m...} — the values of one or more maps, each map's
+	 * values in sorted-key order, concatenated left to right.
+	 */
+	public List<Object> Values(Object... maps) {
+		if (maps.length == 0) {
+			throw new IllegalArgumentException("need at least one argument");
+		}
+		List<Object> values = new ArrayList<>();
+		for (Object m : maps) {
+			Map<String, Object> copy = copyStringMap(m);
+			for (String k : sortedKeys(m)) {
+				values.add(copy.get(k));
+			}
+		}
+		return values;
+	}
+
+	/**
+	 * gomplate {@code coll.Dict k1 v1 k2 v2 …} — build a map from alternating key/value
+	 * arguments. A trailing key with no value maps to the empty string.
+	 */
+	public Map<String, Object> Dict(Object... kv) {
+		Map<String, Object> dict = new LinkedHashMap<>();
+		for (int i = 0; i < kv.length; i += 2) {
+			String key = Values.toString(kv[i]);
+			dict.put(key, (i + 1 < kv.length) ? kv[i + 1] : "");
+		}
+		return dict;
+	}
+
+	/**
+	 * gomplate {@code coll.Merge dst src…} — deep-merge {@code src} maps into
+	 * {@code dst}; left-most values (starting with {@code dst}) win. The inputs are not
+	 * modified.
+	 */
+	public Map<String, Object> Merge(Object dst, Object... srcs) {
+		Map<String, Object> result = copyStringMap(dst);
+		for (Object src : srcs) {
+			result = mergeValues(src, result);
+		}
+		return result;
+	}
+
+	/**
+	 * gomplate {@code coll.Sort [key] list} — a sorted copy of {@code list} in natural
+	 * order. With a {@code key}, map elements are sorted by that entry's value. The input
+	 * is not modified.
+	 */
+	public List<Object> Sort(Object... args) {
+		String key = "";
+		Object list;
+		if (args.length == 1) {
+			list = args[0];
+		}
+		else if (args.length == 2) {
+			key = Values.toString(args[0]);
+			list = args[1];
+		}
+		else {
+			throw new IllegalArgumentException("wrong number of args: wanted 1 or 2, got " + args.length);
+		}
+		List<Object> out = new ArrayList<>(Values.toList(list));
+		String sortKey = key;
+		out.sort((left, right) -> compareValues(extractKey(left, sortKey), extractKey(right, sortKey)));
+		return out;
+	}
+
+	/**
+	 * gomplate {@code coll.Index idx… item} — index {@code item} by each index in turn
+	 * ({@code item} is the last argument). Errors if a map key is absent.
+	 */
+	public Object Index(Object... args) {
+		if (args.length < 2) {
+			throw new IllegalArgumentException("wrong number of args: wanted at least 2, got " + args.length);
+		}
+		Object item = args[args.length - 1];
+		for (int i = 0; i < args.length - 1; i++) {
+			item = indexOne(item, args[i]);
+		}
+		return item;
+	}
+
+	/**
+	 * gomplate {@code coll.Pick key… m} — a copy of map {@code m} keeping only the given
+	 * keys ({@code m} is the last argument). A single list argument is expanded.
+	 */
+	public Map<String, Object> Pick(Object... args) {
+		Map<String, Object> in = pickOmitMap(args);
+		List<String> keys = pickOmitKeys(args);
+		Map<String, Object> out = new LinkedHashMap<>();
+		for (Map.Entry<String, Object> entry : in.entrySet()) {
+			if (keys.contains(entry.getKey())) {
+				out.put(entry.getKey(), entry.getValue());
+			}
+		}
+		return out;
+	}
+
+	/**
+	 * gomplate {@code coll.Omit key… m} — a copy of map {@code m} without the given keys,
+	 * or a copy of a list without the given values ({@code m}/list is the last argument).
+	 */
+	public Object Omit(Object... args) {
+		if (args.length <= 1) {
+			throw new IllegalArgumentException("wrong number of args: wanted 2 or more, got " + args.length);
+		}
+		Object last = args[args.length - 1];
+		if (isListLike(last)) {
+			return omitSlice(args, last);
+		}
+		Map<String, Object> in = pickOmitMap(args);
+		List<String> keys = pickOmitKeys(args);
+		Map<String, Object> out = new LinkedHashMap<>();
+		for (Map.Entry<String, Object> entry : in.entrySet()) {
+			if (!keys.contains(entry.getKey())) {
+				out.put(entry.getKey(), entry.getValue());
+			}
+		}
+		return out;
+	}
+
+	/**
+	 * gomplate {@code coll.Flatten [depth] list} — flatten nested lists. Without a depth,
+	 * flattens fully; {@code depth} limits how many levels are collapsed.
+	 */
+	public List<Object> Flatten(Object... args) {
+		if (args.length < 1 || args.length > 2) {
+			throw new IllegalArgumentException("wrong number of args: wanted 1 or 2, got " + args.length);
+		}
+		int depth = -1;
+		Object list = args[0];
+		if (args.length == 2) {
+			depth = Values.toInt(args[0]);
+			list = args[1];
+		}
+		return flatten(list, depth);
 	}
 
 	/**
@@ -55,7 +210,7 @@ public final class CollNamespace {
 	/** Return a reversed copy of {@code list}. */
 	public List<Object> Reverse(Object list) {
 		List<Object> out = new ArrayList<>(Values.toList(list));
-		java.util.Collections.reverse(out);
+		Collections.reverse(out);
 		return out;
 	}
 
@@ -125,6 +280,119 @@ public final class CollNamespace {
 			}
 		}
 		return out;
+	}
+
+	private static List<String> sortedKeys(Object m) {
+		List<String> keys = new ArrayList<>(copyStringMap(m).keySet());
+		Collections.sort(keys);
+		return keys;
+	}
+
+	/** Deep-merge {@code over} onto {@code base}; {@code over}'s values win. */
+	private static Map<String, Object> mergeValues(Object base, Object over) {
+		Map<String, Object> def = copyStringMap(base);
+		Map<String, Object> src = copyStringMap(over);
+		for (Map.Entry<String, Object> entry : src.entrySet()) {
+			String k = entry.getKey();
+			Object v = entry.getValue();
+			if (def.get(k) instanceof Map && v instanceof Map) {
+				def.put(k, mergeValues(def.get(k), v));
+			}
+			else {
+				def.put(k, v);
+			}
+		}
+		return def;
+	}
+
+	private static Object extractKey(Object element, String key) {
+		if (!key.isEmpty() && element instanceof Map<?, ?> map) {
+			return map.get(key);
+		}
+		return element;
+	}
+
+	private static int compareValues(Object a, Object b) {
+		if (a instanceof Number && b instanceof Number) {
+			return Double.compare(Values.toDouble(a), Values.toDouble(b));
+		}
+		return Values.toString(a).compareTo(Values.toString(b));
+	}
+
+	private static Object indexOne(Object item, Object index) {
+		if (item instanceof Map<?, ?> map) {
+			if (map.containsKey(index)) {
+				return map.get(index);
+			}
+			String key = Values.toString(index);
+			if (map.containsKey(key)) {
+				return map.get(key);
+			}
+			throw new IllegalArgumentException("map has no key " + key);
+		}
+		return Values.toList(item).get(Values.toInt(index));
+	}
+
+	private static Map<String, Object> pickOmitMap(Object[] args) {
+		Object last = args[args.length - 1];
+		if (!(last instanceof Map<?, ?>)) {
+			throw new IllegalArgumentException("wrong map type: last argument must be a map");
+		}
+		return copyStringMap(last);
+	}
+
+	private static List<String> pickOmitKeys(Object[] args) {
+		if (args.length == 2 && isListLike(args[0])) {
+			return toStringList(Values.toList(args[0]));
+		}
+		List<String> keys = new ArrayList<>();
+		for (int i = 0; i < args.length - 1; i++) {
+			keys.add(Values.toString(args[i]));
+		}
+		return keys;
+	}
+
+	private static List<Object> omitSlice(Object[] args, Object last) {
+		List<Object> values = new ArrayList<>(Arrays.asList(args).subList(0, args.length - 1));
+		if (values.size() == 1 && isListLike(values.get(0))) {
+			values = Values.toList(values.get(0));
+		}
+		List<Object> out = new ArrayList<>();
+		for (Object v : Values.toList(last)) {
+			if (!values.contains(v)) {
+				out.add(v);
+			}
+		}
+		return out;
+	}
+
+	private static List<Object> flatten(Object list, int depth) {
+		List<Object> out = new ArrayList<>();
+		if (depth == 0) {
+			out.addAll(Values.toList(list));
+			return out;
+		}
+		for (Object v : Values.toList(list)) {
+			if (isListLike(v)) {
+				out.addAll(flatten(v, depth - 1));
+			}
+			else {
+				out.add(v);
+			}
+		}
+		return out;
+	}
+
+	private static List<String> toStringList(List<Object> in) {
+		List<String> out = new ArrayList<>();
+		for (Object o : in) {
+			out.add(Values.toString(o));
+		}
+		return out;
+	}
+
+	private static boolean isListLike(Object o) {
+		return o instanceof Collection || o instanceof Object[];
 	}
 
 }

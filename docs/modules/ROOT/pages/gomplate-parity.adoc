@@ -42,12 +42,12 @@ Status legend: ✅ complete · 🟡 partial (some methods) · ⬜ not started.
 | `conv`
 | 🟡 Partial
 | 11 / ~20
-| `ToBool ToString Default Join ToInt64 ToInt ToFloat64 ParseInt ParseFloat ParseUint Atoi`. Missing the variadic plural/`s` forms (`ToBools ToInts ToStrings ToInt64s ToFloat64s` — blocked by the varargs-method gap) and `URL` (returns a parsed-URL object).
+| `ToBool ToString Default Join ToInt64 ToInt ToFloat64 ParseInt ParseFloat ParseUint Atoi`. Missing the variadic plural/`s` forms (`ToBools ToInts ToStrings ToInt64s ToFloat64s` — unblocked since 1.2.1, not yet ported) and `URL` (returns a parsed-URL object).
 
 | `coll`
 | 🟡 Partial
-| 7 / ~18
-| `Has Reverse Append Prepend Uniq Set Unset`. `Slice` is present but *not callable* (variadic). Missing (all variadic or needing a JSONPath/JQ engine): `Flatten Merge Sort Keys Values Pick Omit Dict Index GoSlice JSONPath JQ`.
+| 16 / ~18
+| `Has Reverse Append Prepend Uniq Set Unset Slice Keys Values Dict Merge Sort Index Pick Omit Flatten`. Missing only the three that need a JSONPath/JQ/reflect-slice engine: `GoSlice JSONPath JQ`.
 
 | `data`
 | 🟡 Partial
@@ -60,8 +60,8 @@ Status legend: ✅ complete · 🟡 partial (some methods) · ⬜ not started.
 | `Encode Decode DecodeBytes`. `Encode` is standard/padded; `Decode` falls back to the URL-safe alphabet, matching gomplate.
 
 | `math`
-| 🟡 Partial
-| 11 / ~16
+| ✅ Complete
+| 16 / 16
 | Full: `Abs Sub Div Rem Pow Ceil Floor Round IsInt IsFloat IsNum` plus the variadic `Add Mul Max Min Seq` (callable since gotmpl4j 1.2.1 unpacks varargs methods).
 
 | `time`
@@ -185,7 +185,7 @@ The seed's original `Trim` had the arguments reversed; it now matches gomplate.
 | `Atoi`       | ✅ | `conv.Atoi s`
 |===
 
-.`coll` (7 working / ~18)
+.`coll` (16 working / ~18)
 [cols="1,1,3"]
 |===
 | Method | Status | gomplate signature
@@ -197,10 +197,22 @@ The seed's original `Trim` had the arguments reversed; it now matches gomplate.
 | `Uniq`    | ✅ | `coll.Uniq list` (keeps first-seen order)
 | `Set`     | ✅ | `coll.Set key value map`
 | `Unset`   | ✅ | `coll.Unset key map`
-| `Slice`   | 🟡 | `coll.Slice items...` — implemented but *not callable from templates* (variadic; see <<known-limitations>>). Use Sprig's `list` instead.
+| `Slice`   | ✅ | `coll.Slice items…` (variadic)
+| `Keys`    | ✅ | `coll.Keys m…` (per-map sorted-key order)
+| `Values`  | ✅ | `coll.Values m…` (per-map sorted-key order)
+| `Dict`    | ✅ | `coll.Dict k1 v1 …` (odd trailing key → "")
+| `Merge`   | ✅ | `coll.Merge dst src…` (deep; left-most wins)
+| `Sort`    | ✅ | `coll.Sort [key] list` (natural order; key for maps)
+| `Index`   | ✅ | `coll.Index idx… item` (item last; errors on missing key)
+| `Pick`    | ✅ | `coll.Pick key… m`
+| `Omit`    | ✅ | `coll.Omit key… m` (or values… list)
+| `Flatten` | ✅ | `coll.Flatten [depth] list`
+| `GoSlice` | ⬜ | needs `reflect`-style slicing
+| `JSONPath`| ⬜ | needs a JSONPath engine
+| `JQ`      | ⬜ | needs a JQ engine
 |===
 
-.`math` (11 / ~16)
+.`math` (16 / 16)
 [cols="1,1,3"]
 |===
 | Method | Status | gomplate signature
@@ -347,9 +359,10 @@ of gomplate's CLI but none of the datasource, context, or directory machinery.
   methods by exact parameter count and did not unpack Java varargs, so a variadic
   method such as `math.Add(Object...)` resolved to nothing. gotmpl4j 1.2.1 unpacks
   varargs, so `Object...` namespace methods are callable directly — `math` (`Add Mul
-  Max Min Seq`) is done. The remaining variadic functions in `coll`, `conv` (the `…s`
-  plural forms), `strings`, and `data` (`CSV`) are simply *not yet ported*, no longer
-  blocked by the engine.
+  Max Min Seq`) and `coll` (`Slice Keys Values Dict Merge Sort Index Pick Omit Flatten`)
+  are done. The remaining variadic functions in `conv` (the `…s` plural forms),
+  `strings`, and `data` (`CSV`) are simply *not yet ported*, no longer blocked by the
+  engine.
 * **Namespace args arrive loosely typed** (`Object`) and are coerced through
   `functions.Values`. Coercion edge cases (e.g. numeric strings, nil handling) may
   differ from gomplate's Go type handling until each method has a parity test.
