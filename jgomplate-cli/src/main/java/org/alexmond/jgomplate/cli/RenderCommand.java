@@ -56,6 +56,10 @@ public class RenderCommand implements Callable<Integer> {
 			description = "Datasource 'alias=URL' referenced via (ds \"alias\")/include. Repeatable.")
 	private List<String> datasources;
 
+	@Option(names = { "-t", "--template" },
+			description = "Named partial 'name=URL' invoked via {{ template \"name\" . }}. Repeatable.")
+	private List<String> templates;
+
 	@Option(names = { "-V", "--verbose" }, description = "Verbose output.")
 	private Boolean verbose;
 
@@ -97,6 +101,7 @@ public class RenderCommand implements Callable<Integer> {
 		cli.setExperimental(this.experimental);
 		cli.setContext(parseDatasources(this.contexts));
 		cli.setDatasources(parseDatasources(this.datasources));
+		cli.setTemplates(parseDatasources(this.templates));
 		return cli;
 	}
 

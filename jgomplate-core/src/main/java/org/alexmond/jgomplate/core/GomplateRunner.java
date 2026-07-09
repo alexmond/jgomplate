@@ -15,6 +15,7 @@ import org.alexmond.gotmpl4j.Function;
 import org.alexmond.jgomplate.core.config.GomplateConfig;
 import org.alexmond.jgomplate.core.datasource.ContextResolver;
 import org.alexmond.jgomplate.core.datasource.DatasourceFunctions;
+import org.alexmond.jgomplate.core.datasource.TemplateResolver;
 
 /**
  * Drives a render from a resolved {@link GomplateConfig}: resolves the template input(s),
@@ -26,7 +27,8 @@ import org.alexmond.jgomplate.core.datasource.DatasourceFunctions;
  * lists paired by position, stdin/stdout, the {@code missingKey} behaviour (defaulting to
  * gomplate's {@code error}), {@code context} datasources bound to the template root, and
  * the {@code datasource}/{@code ds}/{@code include} functions over the configured
- * {@code datasources}. Directory rendering, delimiters and post-exec are wired by
+ * {@code datasources}, and named partial {@code templates} invokable via {@code {{
+ * template "name" . }}}. Directory rendering, delimiters and post-exec are wired by
  * follow-up issues; unrelated config keys are accepted but ignored here.
  */
 public class GomplateRunner {
@@ -40,17 +42,20 @@ public class GomplateRunner {
 
 	private final ContextResolver contextResolver;
 
+	private final TemplateResolver templateResolver;
+
 	public GomplateRunner() {
-		this(new GomplateEngine(), new ContextResolver());
+		this(new GomplateEngine(), new ContextResolver(), new TemplateResolver());
 	}
 
 	public GomplateRunner(GomplateEngine engine) {
-		this(engine, new ContextResolver());
+		this(engine, new ContextResolver(), new TemplateResolver());
 	}
 
-	public GomplateRunner(GomplateEngine engine, ContextResolver contextResolver) {
+	public GomplateRunner(GomplateEngine engine, ContextResolver contextResolver, TemplateResolver templateResolver) {
 		this.engine = engine;
 		this.contextResolver = contextResolver;
+		this.templateResolver = templateResolver;
 	}
 
 	/**
@@ -65,9 +70,10 @@ public class GomplateRunner {
 		String missingKey = (config.getMissingKey() != null) ? config.getMissingKey() : DEFAULT_MISSING_KEY;
 		Map<String, Object> context = this.contextResolver.resolve(config.getContext());
 		Map<String, Function> functions = new DatasourceFunctions(config.getDatasources()).functions();
+		Map<String, String> partials = this.templateResolver.resolve(config.getTemplates());
 
 		if (config.getIn() != null) {
-			String rendered = this.engine.render(config.getIn(), context, missingKey, functions);
+			String rendered = this.engine.render(config.getIn(), context, missingKey, functions, partials);
 			write(target(outputs, 0), rendered, stdout);
 			return;
 		}
@@ -85,7 +91,8 @@ public class GomplateRunner {
 			else {
 				templateText = readFile(Path.of(source));
 			}
-			write(target(outputs, i), this.engine.render(templateText, context, missingKey, functions), stdout);
+			write(target(outputs, i), this.engine.render(templateText, context, missingKey, functions, partials),
+					stdout);
 		}
 	}
 

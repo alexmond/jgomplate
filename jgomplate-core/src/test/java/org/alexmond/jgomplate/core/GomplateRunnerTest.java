@@ -154,6 +154,20 @@ class GomplateRunnerTest {
 	}
 
 	@Test
+	void partialTemplateInvokableFromMain(@TempDir Path dir) throws Exception {
+		Path partial = dir.resolve("greeting.tmpl");
+		Files.writeString(partial, "Hi {{ . }}");
+		GomplateConfig config = new GomplateConfig();
+		config.setIn("[{{ template \"greeting\" \"alex\" }}]");
+		config.setTemplates(Map.of("greeting", dsConfig(partial.toString())));
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+		this.runner.run(config, NO_STDIN, out);
+
+		assertEquals("[Hi alex]", out.toString(StandardCharsets.UTF_8));
+	}
+
+	@Test
 	void multipleFilesPairedByPosition(@TempDir Path dir) throws Exception {
 		Path in1 = dir.resolve("a.tmpl");
 		Path in2 = dir.resolve("b.tmpl");

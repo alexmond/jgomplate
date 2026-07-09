@@ -17,10 +17,10 @@ import org.alexmond.gotmpl4j.GoTemplate;
  * map that becomes the template's root data ({@code .}).
  *
  * <p>
- * This seed renders a single template string against an in-memory context. Datasource
- * wiring ({@code datasource}/{@code ds} functions backed by
- * {@link org.alexmond.jgomplate.core.datasource}) and the full gomplate CLI context are
- * follow-up work.
+ * Renders a template string against an in-memory context, with optional overloads for a
+ * missing-key mode, extra per-render functions (e.g. the {@code datasource}/{@code ds}/
+ * {@code include} functions bound to a CLI invocation), and named partial templates
+ * invokable via {@code {{ template "name" . }}}.
  */
 public class GomplateEngine {
 
@@ -63,6 +63,25 @@ public class GomplateEngine {
 	 */
 	public String render(String templateText, Map<String, Object> context, String missingKey,
 			Map<String, Function> extraFunctions) {
+		return render(templateText, context, missingKey, extraFunctions, null);
+	}
+
+	/**
+	 * Render {@code templateText} with extra functions and a set of named partial
+	 * templates (backing gomplate's {@code -t}), each invokable from the main template
+	 * via {@code {{ template "name" . }}}.
+	 * @param templateText the main gomplate/Go template source
+	 * @param context the root data exposed as {@code .}; may be empty
+	 * @param missingKey the Go {@code missingkey} token, or {@code null}/blank for the
+	 * default
+	 * @param extraFunctions functions to add for this render (may be {@code null}/empty)
+	 * @param partials {@code name -> template source} definitions parsed alongside the
+	 * main template (may be {@code null}/empty)
+	 * @return the rendered output
+	 * @throws IllegalArgumentException if {@code missingKey} is not a recognised token
+	 */
+	public String render(String templateText, Map<String, Object> context, String missingKey,
+			Map<String, Function> extraFunctions, Map<String, String> partials) {
 		GoTemplate.Builder builder = GoTemplate.builder();
 		if (missingKey != null && !missingKey.isBlank()) {
 			builder.option("missingkey=" + missingKey.trim().toLowerCase(Locale.ROOT));
@@ -70,7 +89,14 @@ public class GomplateEngine {
 		if (extraFunctions != null && !extraFunctions.isEmpty()) {
 			builder.withFunctions(extraFunctions);
 		}
-		return builder.build().parse("template", templateText).render((context != null) ? context : Map.of());
+		GoTemplate template = builder.build();
+		if (partials != null) {
+			for (Map.Entry<String, String> partial : partials.entrySet()) {
+				template.parse(partial.getKey(), partial.getValue());
+			}
+		}
+		template.parse("template", templateText);
+		return template.render("template", (context != null) ? context : Map.of());
 	}
 
 	/**
