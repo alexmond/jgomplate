@@ -210,6 +210,31 @@ class GomplateParityTest {
 
 	}
 
+	/**
+	 * {@code base64} namespace. Cases mirror gomplate's internal/funcs/base64_test.go.
+	 */
+	@Nested
+	class Base64 {
+
+		@ParameterizedTest
+		@CsvSource(delimiter = '|',
+				value = { "{{ base64.Encode \"hello world\" }}          | aGVsbG8gd29ybGQ=",
+						"{{ base64.Encode \"\" }}                       | ''",
+						"{{ base64.Decode \"aGVsbG8gd29ybGQ=\" }}       | hello world",
+						// standard decode fails on '_', falls back to the URL-safe
+						// alphabet
+						"{{ base64.Decode \"aGVsbG8_\" }}               | hello?",
+						// round-trip through Encode/Decode
+						"{{ base64.Decode (base64.Encode \"foo bar\") }} | foo bar",
+						// DecodeBytes returns raw bytes; Encode re-encodes the byte[]
+						// directly
+						"{{ base64.Encode (base64.DecodeBytes \"aGVsbG8=\") }} | aGVsbG8=" })
+		void base64(String template, String expected) {
+			assertEquals(expected, render(template));
+		}
+
+	}
+
 	/** {@code coll} namespace. Cases mirror gomplate's coll/coll_test.go. */
 	@Nested
 	class Coll {

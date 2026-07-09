@@ -55,9 +55,9 @@ Status legend: ✅ complete · 🟡 partial (some methods) · ⬜ not started.
 | gomplate's most-used namespace (`data.JSON data.YAML data.ToJSON data.ToYAML data.CSV data.TOML …`). *Partly covered indirectly:* the datasource layer parses JSON/YAML, and Sprig's `toJson`/`fromJson`/`toYaml` are available non-namespaced. The `data.*` namespace itself is not registered.
 
 | `base64`
-| ⬜ Not started
-| 0 / 3
-| `Encode Decode DecodeBytes`. Sprig's `b64enc`/`b64dec` are available as a stopgap.
+| ✅ Complete
+| 3 / 3
+| `Encode Decode DecodeBytes`. `Encode` is standard/padded; `Decode` falls back to the URL-safe alphabet, matching gomplate.
 
 | `math`
 | 🟡 Partial
@@ -222,6 +222,16 @@ NOTE: gomplate preserves numeric type — `Abs`/`Sub`/`Pow` stay integral for
 integral inputs, `Div` is always floating-point, `Rem` is integer. jgomplate
 returns whole-valued results as an integer so they render without a trailing
 `.0`, matching Go's rendering of an integral `float64`.
+
+.`base64` (3 / 3 — complete)
+[cols="1,1,3"]
+|===
+| Method | Status | gomplate signature
+
+| `Encode`      | ✅ | `base64.Encode in` (standard, padded)
+| `Decode`      | ✅ | `base64.Decode in` (std → URL-safe fallback)
+| `DecodeBytes` | ✅ | `base64.DecodeBytes in`
+|===
 
 == Datasource parity
 
