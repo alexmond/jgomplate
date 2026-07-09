@@ -36,8 +36,8 @@ Status legend: ✅ complete · 🟡 partial (some methods) · ⬜ not started.
 
 | `strings`
 | 🟡 Partial
-| 26 / ~30
-| `ToUpper ToLower Trim TrimLeft TrimRight TrimPrefix TrimSuffix TrimSpace Repeat ReplaceAll Contains HasPrefix HasSuffix Split SplitN Trunc` plus the case-format helpers (`Title CamelCase SnakeCase KebabCase`), quoting (`Quote Squote ShellQuote`), and `Indent`/`RuneCount`. Missing only `Slug` (needs a transliterating slug library) and `WordWrap`/`Abbrev`/`Sort`/`Initials` (need the exact `goutils` algorithms).
+| 28 / ~30
+| `ToUpper ToLower Trim TrimLeft TrimRight TrimPrefix TrimSuffix TrimSpace Repeat ReplaceAll Contains HasPrefix HasSuffix Split SplitN Trunc` plus the case-format helpers (`Title CamelCase SnakeCase KebabCase`), quoting (`Quote Squote ShellQuote`), `Indent`/`RuneCount`, and `WordWrap`/`Abbrev` (verbatim ports of Masterminds' `goutils`). Missing only `Slug` (needs a transliterating slug library) and `Sort`/`Initials`.
 
 | `conv`
 | 🟡 Partial
@@ -140,7 +140,7 @@ Status legend: ✅ complete · 🟡 partial (some methods) · ⬜ not started.
 The three partially-implemented namespaces, method by method. ✅ = present and
 faithful to gomplate's signature; blank row group = not yet ported.
 
-.`strings` (26 / ~30)
+.`strings` (28 / ~30)
 [cols="1,1,3"]
 |===
 | Method | Status | gomplate signature
@@ -170,9 +170,9 @@ faithful to gomplate's signature; blank row group = not yet ported.
 | `ShellQuote`  | ✅ | `strings.ShellQuote s` (list → space-joined)
 | `Indent`      | ✅ | `strings.Indent [width] [indent] s`
 | `RuneCount`   | ✅ | `strings.RuneCount in…`
+| `WordWrap`    | ✅ | `strings.WordWrap [width] [lbseq] s` (goutils port)
+| `Abbrev`      | ✅ | `strings.Abbrev [offset] width s` (goutils port)
 | `Slug`        | ⬜ | needs a transliterating slug library
-| `WordWrap`    | ⬜ | needs the `goutils` wrapping algorithm
-| `Abbrev`      | ⬜ | needs the `goutils` abbreviation algorithm
 |===
 
 NOTE: gomplate's affix/separator argument comes *first* and the operated-on
@@ -388,8 +388,13 @@ of gomplate's CLI but none of the datasource, context, or directory machinery.
   Merge Sort Index Pick Omit Flatten`), `conv` (the `…s` plural forms), `strings`
   (`Indent RuneCount`), and `data` (`CSV CSVByRow CSVByColumn ToCSV`) are all done —
   no variadic function is blocked by the engine any more. The functions still absent
-  (`strings.WordWrap`/`Abbrev`/`Slug`, `coll.JSONPath`/`JQ`, `data.CUE`, …) need
-  an external algorithm or engine, not a varargs fix.
+  (`strings.Slug`, `coll.JSONPath`/`JQ`, `data.CUE`, …) need an external algorithm or
+  engine, not a varargs fix.
+* **`coll.JSONPath` is deliberately deferred.** gomplate uses the Kubernetes JSONPath
+  dialect (`k8s.io/client-go/util/jsonpath` — leading-dot, brace-wrapped, k8s filter
+  syntax). No mature Java library implements that dialect; Jayway/Goessner JSONPath is
+  a different one (`$`-rooted, different filters), so a Jayway-backed `JSONPath` would
+  not match gomplate's expressions and is not shipped under the parity banner.
 * **Namespace args arrive loosely typed** (`Object`) and are coerced through
   `functions.Values`. Coercion edge cases (e.g. numeric strings, nil handling) may
   differ from gomplate's Go type handling until each method has a parity test.

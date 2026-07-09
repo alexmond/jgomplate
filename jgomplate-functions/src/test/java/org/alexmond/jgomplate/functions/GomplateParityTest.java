@@ -227,7 +227,11 @@ class GomplateParityTest {
 				// Indent: 2-arg (indent string OR width int) and 3-arg (width, indent)
 				"{{ strings.Indent \"  \" \"foo\" }}       | '  foo'",
 				"{{ strings.Indent 2 \"foo\" }}            | '  foo'",
-				"{{ strings.Indent 2 \"-\" \"foo\" }}      | --foo" })
+				"{{ strings.Indent 2 \"-\" \"foo\" }}      | --foo",
+				// Abbrev — vectors from gomplate strings.TestAbbrev (ports goutils)
+				"{{ strings.Abbrev 3 \"foo\" }}            | foo", "{{ strings.Abbrev 2 6 \"foobar\" }}       | foobar",
+				"{{ strings.Abbrev 6 9 \"foobarbazquxquux\" }} | ...baz...",
+				"{{ strings.Abbrev 9 \"The quick brown fox\" }} | The qu..." })
 		void caseQuoteIndent(String template, String expected) {
 			assertEquals(expected, render(template));
 		}
@@ -253,6 +257,18 @@ class GomplateParityTest {
 		void squote() {
 			assertEquals("'foo'", render("{{ strings.Squote \"foo\" }}"));
 			assertEquals("'it''s'", render("{{ strings.Squote \"it's\" }}"));
+		}
+
+		@Test
+		void wordWrap() {
+			// default width 80 leaves a short line alone
+			assertEquals("hello world", render("{{ strings.WordWrap \"hello world\" }}"));
+			// width wraps at the last space within the limit
+			assertEquals("The quick\nbrown fox", render("{{ strings.WordWrap 10 \"The quick brown fox\" }}"));
+			// 3-arg form: width, then a custom line-break sequence
+			assertEquals("The quick|brown fox", render("{{ strings.WordWrap 10 \"|\" \"The quick brown fox\" }}"));
+			// a word longer than the width is left intact (wrapLongWords = false)
+			assertEquals("a\nlongword\nb", render("{{ strings.WordWrap 4 \"a longword b\" }}"));
 		}
 
 	}

@@ -22,9 +22,10 @@ import org.alexmond.jgomplate.functions.Values;
  *
  * <p>
  * Still missing from the full gomplate {@code strings} namespace: {@code Slug} (needs a
- * transliterating slug library), and {@code WordWrap}/{@code Abbrev} (need the exact
- * {@code goutils} wrapping/abbreviation algorithms). {@code Trunc}/{@code Split} are
- * character-based rather than byte-based.
+ * transliterating slug library). {@code WordWrap}/{@code Abbrev} port Masterminds'
+ * {@code goutils} algorithms verbatim. {@code Trunc}/{@code Split}/{@code WordWrap}/
+ * {@code Abbrev} index by character rather than byte (so ASCII matches gomplate exactly;
+ * multibyte input may differ).
  */
 @SuppressWarnings("PMD.MethodNamingConventions") // method names mirror gomplate's Go API
 													// (PascalCase)
@@ -144,6 +145,64 @@ public final class StringsNamespace {
 			indent = Values.toString(args[1]);
 		}
 		return indentString(width, indent, Values.toString(args[args.length - 1]));
+	}
+
+	/**
+	 * gomplate {@code strings.WordWrap [width] [lbseq] s} — insert line breaks so no line
+	 * exceeds {@code width} (default 80) using {@code lbseq} (default {@code \n}). Long
+	 * words are left intact (extended past the limit), matching gomplate.
+	 */
+	public String WordWrap(Object... args) {
+		if (args.length == 0 || args.length > 3) {
+			throw new IllegalArgumentException("expected 1, 2, or 3 args, got " + args.length);
+		}
+		long width = 0;
+		String lbSeq = "";
+		if (args.length == 2) {
+			if (args[0] instanceof String str) {
+				lbSeq = str;
+			}
+			else {
+				width = Values.toLong(args[0]);
+			}
+		}
+		else if (args.length == 3) {
+			width = Values.toLong(args[0]);
+			lbSeq = Values.toString(args[1]);
+		}
+		String input = Values.toString(args[args.length - 1]);
+		int w = (width == 0) ? 80 : (int) width;
+		if (w == -1) {
+			w = Integer.MAX_VALUE;
+		}
+		return wrapCustom(input, w, lbSeq.isEmpty() ? "\n" : lbSeq, false);
+	}
+
+	/**
+	 * gomplate {@code strings.Abbrev [offset] width s} — abbreviate {@code s} with an
+	 * ellipsis so the result is at most {@code width} characters, optionally keeping the
+	 * {@code offset} position visible. Ports goutils' {@code AbbreviateFull}.
+	 */
+	public String Abbrev(Object... args) {
+		int offset = 0;
+		int width;
+		String str;
+		if (args.length == 2) {
+			width = Values.toInt(args[0]);
+			str = Values.toString(args[1]);
+		}
+		else if (args.length == 3) {
+			offset = Values.toInt(args[0]);
+			width = Values.toInt(args[1]);
+			str = Values.toString(args[2]);
+		}
+		else {
+			throw new IllegalArgumentException("abbrev requires a 'width' and 'input' argument");
+		}
+		if (str.length() <= width) {
+			return str;
+		}
+		return abbreviateFull(str, offset, width);
 	}
 
 	/**
@@ -293,6 +352,76 @@ public final class StringsNamespace {
 			bol = c == '\n';
 		}
 		return res.toString();
+	}
+
+	/** Port of goutils {@code WrapCustom} (char-indexed). */
+	private static String wrapCustom(String str, int wrapLength, String newLineStr, boolean wrapLongWords) {
+		if (str.isEmpty()) {
+			return "";
+		}
+		int width = (wrapLength < 1) ? 1 : wrapLength;
+		int inputLineLength = str.length();
+		int offset = 0;
+		StringBuilder wrapped = new StringBuilder();
+		while (inputLineLength - offset > width) {
+			if (str.charAt(offset) == ' ') {
+				offset++;
+				continue;
+			}
+			int end = width + offset + 1;
+			int spaceToWrapAt = str.substring(offset, end).lastIndexOf(' ') + offset;
+			if (spaceToWrapAt >= offset) {
+				wrapped.append(str, offset, spaceToWrapAt).append(newLineStr);
+				offset = spaceToWrapAt + 1;
+			}
+			else if (wrapLongWords) {
+				wrapped.append(str, offset, width + offset).append(newLineStr);
+				offset += width;
+			}
+			else {
+				int longEnd = width + offset;
+				int index = str.substring(longEnd).indexOf(' ');
+				if (index == -1) {
+					wrapped.append(str.substring(offset));
+					offset = inputLineLength;
+				}
+				else {
+					spaceToWrapAt = index + longEnd;
+					wrapped.append(str, offset, spaceToWrapAt).append(newLineStr);
+					offset = spaceToWrapAt + 1;
+				}
+			}
+		}
+		wrapped.append(str.substring(offset));
+		return wrapped.toString();
+	}
+
+	/** Port of goutils {@code AbbreviateFull} (char-indexed). */
+	private static String abbreviateFull(String str, int offset, int maxWidth) {
+		if (str.isEmpty()) {
+			return "";
+		}
+		if (maxWidth < 4) {
+			throw new IllegalArgumentException("Minimum abbreviation width is 4");
+		}
+		if (str.length() <= maxWidth) {
+			return str;
+		}
+		int off = Math.min(offset, str.length());
+		if (str.length() - off < maxWidth - 3) {
+			off = str.length() - (maxWidth - 3);
+		}
+		String marker = "...";
+		if (off <= 4) {
+			return str.substring(0, maxWidth - 3) + marker;
+		}
+		if (maxWidth < 7) {
+			throw new IllegalArgumentException("Minimum abbreviation width with offset is 7");
+		}
+		if (off + maxWidth - 3 < str.length()) {
+			return marker + abbreviateFull(str.substring(off), 0, maxWidth - 3);
+		}
+		return marker + str.substring(str.length() - (maxWidth - 3));
 	}
 
 	private static String trimSet(String text, String cutset, boolean left, boolean right) {
