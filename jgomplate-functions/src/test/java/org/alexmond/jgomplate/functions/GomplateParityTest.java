@@ -12,6 +12,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.alexmond.gotmpl4j.GoTemplate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Parity tests for the implemented gomplate namespaces, with cases ported from gomplate's
@@ -257,6 +258,37 @@ class GomplateParityTest {
 		void sha256OfEmptyString() {
 			assertEquals("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 					render("{{ crypto.SHA256 \"\" }}"));
+		}
+
+	}
+
+	/** {@code uuid} namespace. Cases mirror gomplate's internal/funcs/uuid_test.go. */
+	@Nested
+	class Uuid {
+
+		@ParameterizedTest
+		@CsvSource(delimiter = '|', value = {
+				"{{ uuid.Nil }}                                             | 00000000-0000-0000-0000-000000000000",
+				"{{ uuid.IsValid \"00000000-0000-0000-0000-000000000000\" }} | true",
+				"{{ uuid.IsValid \"a987fbc9-4bed-4078-8f07-9141ba07c9f3\" }} | true",
+				"{{ uuid.IsValid \"not-a-uuid\" }}                           | false",
+				"{{ uuid.IsValid \"12345\" }}                                | false",
+				// Parse returns the canonical lowercase form
+				"{{ uuid.Parse \"A987FBC9-4BED-4078-8F07-9141BA07C9F3\" }}   | a987fbc9-4bed-4078-8f07-9141ba07c9f3",
+				// Microsoft braces, raw hex, and urn:uuid: forms all decode
+				"{{ uuid.Parse \"{a987fbc9-4bed-4078-8f07-9141ba07c9f3}\" }} | a987fbc9-4bed-4078-8f07-9141ba07c9f3",
+				"{{ uuid.Parse \"a987fbc94bed40788f079141ba07c9f3\" }}       | a987fbc9-4bed-4078-8f07-9141ba07c9f3",
+				"{{ uuid.Parse \"urn:uuid:a987fbc9-4bed-4078-8f07-9141ba07c9f3\" }} | a987fbc9-4bed-4078-8f07-9141ba07c9f3" })
+		void nilIsValidParse(String template, String expected) {
+			assertEquals(expected, render(template));
+		}
+
+		@Test
+		void v4HasVersion4Format() {
+			// V4 is random, so assert the RFC 4122 v4 shape rather than an exact value.
+			String out = render("{{ uuid.V4 }}");
+			assertTrue(out.matches("[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"),
+					"not a v4 UUID: " + out);
 		}
 
 	}
