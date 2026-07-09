@@ -41,8 +41,8 @@ Status legend: ✅ complete · 🟡 partial (some methods) · ⬜ not started.
 
 | `conv`
 | 🟡 Partial
-| 4 / ~20
-| `ToBool ToString Default Join`. Missing the numeric coercions (`ToInt ToInt64 ToFloat64 ParseInt ParseFloat ParseUint`), the plural/`s` forms (`ToBools ToInts ToStrings …`), and `URL`.
+| 11 / ~20
+| `ToBool ToString Default Join ToInt64 ToInt ToFloat64 ParseInt ParseFloat ParseUint Atoi`. Missing the variadic plural/`s` forms (`ToBools ToInts ToStrings ToInt64s ToFloat64s` — blocked by the varargs-method gap) and `URL` (returns a parsed-URL object).
 
 | `coll`
 | 🟡 Partial
@@ -167,15 +167,22 @@ NOTE: gomplate's affix/separator argument comes *first* and the operated-on
 string *last* (pipeline-friendly) — `strings.Trim cutset s`, not `s cutset`.
 The seed's original `Trim` had the arguments reversed; it now matches gomplate.
 
-.`conv` (4 / ~20)
+.`conv` (11 / ~20)
 [cols="1,1,3"]
 |===
 | Method | Status | gomplate signature
 
-| `ToBool`   | ✅ | `conv.ToBool in`
-| `ToString` | ✅ | `conv.ToString in`
-| `Default`  | ✅ | `conv.Default default in`
-| `Join`     | ✅ | `conv.Join list sep`
+| `ToBool`     | ✅ | `conv.ToBool in`
+| `ToString`   | ✅ | `conv.ToString in`
+| `Default`    | ✅ | `conv.Default default in`
+| `Join`       | ✅ | `conv.Join list sep`
+| `ToInt64`    | ✅ | `conv.ToInt64 in`
+| `ToInt`      | ✅ | `conv.ToInt in`
+| `ToFloat64`  | ✅ | `conv.ToFloat64 in`
+| `ParseInt`   | ✅ | `conv.ParseInt s base bitSize` (`bitSize` unused on the JVM)
+| `ParseFloat` | ✅ | `conv.ParseFloat s bitSize`
+| `ParseUint`  | ✅ | `conv.ParseUint s base bitSize`
+| `Atoi`       | ✅ | `conv.Atoi s`
 |===
 
 .`coll` (2 working / ~18)

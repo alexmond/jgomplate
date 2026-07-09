@@ -65,7 +65,14 @@ public final class Values {
 		if (value instanceof Number number) {
 			return number.longValue();
 		}
-		return Long.decode(str(value).trim());
+		String text = str(value).trim().replace(",", "");
+		try {
+			return Long.decode(text);
+		}
+		catch (NumberFormatException ignored) {
+			// gomplate's strToInt64 falls back to a float parse, then truncates
+			return (long) Double.parseDouble(text);
+		}
 	}
 
 	/**
@@ -82,7 +89,7 @@ public final class Values {
 		if (value instanceof Number number) {
 			return number.doubleValue();
 		}
-		String text = str(value).trim();
+		String text = str(value).trim().replace(",", "");
 		try {
 			return Long.decode(text);
 		}

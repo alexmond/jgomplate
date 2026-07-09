@@ -105,6 +105,23 @@ class GomplateParityTest {
 			assertEquals("fallback", render("{{ conv.Default \"fallback\" .n }}", data));
 		}
 
+		@ParameterizedTest
+		@CsvSource(delimiter = '|', value = {
+				// ToInt64/ToInt: base-0 strings, float truncation, bool coercion
+				"{{ conv.ToInt64 \"42\" }}     | 42", "{{ conv.ToInt64 \"0x1A\" }}   | 26",
+				"{{ conv.ToInt64 3.99 }}       | 3", "{{ conv.ToInt64 true }}       | 1",
+				"{{ conv.ToInt \"42\" }}       | 42", "{{ conv.ToInt 3.99 }}         | 3",
+				// ToFloat64: fractional values (whole-float rendering is engine-defined)
+				"{{ conv.ToFloat64 \"3.14\" }} | 3.14", "{{ conv.ToFloat64 \"1.5\" }}  | 1.5",
+				// Parse*: explicit base; bitSize accepted but unused on the JVM
+				"{{ conv.ParseInt \"FF\" 16 64 }}   | 255", "{{ conv.ParseInt \"-42\" 10 64 }} | -42",
+				"{{ conv.ParseInt \"0x1A\" 0 64 }}  | 26", "{{ conv.ParseFloat \"3.14\" 64 }} | 3.14",
+				"{{ conv.ParseUint \"FF\" 16 64 }}  | 255", "{{ conv.Atoi \"42\" }}         | 42",
+				"{{ conv.Atoi \"-7\" }}         | -7" })
+		void numericCoercions(String template, String expected) {
+			assertEquals(expected, render(template));
+		}
+
 	}
 
 	/**
