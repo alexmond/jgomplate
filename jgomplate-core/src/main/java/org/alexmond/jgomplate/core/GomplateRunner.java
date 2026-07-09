@@ -18,14 +18,18 @@ import org.alexmond.jgomplate.core.config.GomplateConfig;
  * output(s). {@code -} is stdin as an input and stdout as an output.
  *
  * <p>
- * Seed scope (issue #7): the inline template ({@code in}), the {@code inputFiles} /
- * {@code outputFiles} lists paired by position, and stdin/stdout. Directory rendering,
- * datasource/context binding, delimiters, missing-key handling and post-exec are wired by
- * follow-up issues; unrelated config keys are accepted but ignored here.
+ * Scope: the inline template ({@code in}), the {@code inputFiles} / {@code outputFiles}
+ * lists paired by position, stdin/stdout, and the {@code missingKey} behaviour
+ * (defaulting to gomplate's {@code error}). Directory rendering, datasource/context
+ * binding, delimiters and post-exec are wired by follow-up issues; unrelated config keys
+ * are accepted but ignored here.
  */
 public class GomplateRunner {
 
 	private static final String STDIN_STDOUT = "-";
+
+	/** gomplate's CLI default for {@code --missing-key}. */
+	private static final String DEFAULT_MISSING_KEY = "error";
 
 	private final GomplateEngine engine;
 
@@ -46,9 +50,10 @@ public class GomplateRunner {
 	 */
 	public void run(GomplateConfig config, InputStream stdin, OutputStream stdout) {
 		List<String> outputs = (config.getOutputFiles() != null) ? config.getOutputFiles() : List.of();
+		String missingKey = (config.getMissingKey() != null) ? config.getMissingKey() : DEFAULT_MISSING_KEY;
 
 		if (config.getIn() != null) {
-			String rendered = this.engine.render(config.getIn(), Map.of());
+			String rendered = this.engine.render(config.getIn(), Map.of(), missingKey);
 			write(target(outputs, 0), rendered, stdout);
 			return;
 		}
@@ -66,7 +71,7 @@ public class GomplateRunner {
 			else {
 				templateText = readFile(Path.of(source));
 			}
-			write(target(outputs, i), this.engine.render(templateText, Map.of()), stdout);
+			write(target(outputs, i), this.engine.render(templateText, Map.of(), missingKey), stdout);
 		}
 	}
 

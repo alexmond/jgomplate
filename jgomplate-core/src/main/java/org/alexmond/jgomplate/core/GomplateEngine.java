@@ -1,5 +1,6 @@
 package org.alexmond.jgomplate.core;
 
+import java.util.Locale;
 import java.util.Map;
 
 import org.alexmond.gotmpl4j.GoTemplate;
@@ -29,7 +30,26 @@ public class GomplateEngine {
 	 * @return the rendered output
 	 */
 	public String render(String templateText, Map<String, Object> context) {
-		return new GoTemplate().parse("template", templateText).render((context != null) ? context : Map.of());
+		return render(templateText, context, null);
+	}
+
+	/**
+	 * Render {@code templateText} against {@code context} with an explicit missing-key
+	 * behaviour.
+	 * @param templateText the gomplate/Go template source
+	 * @param context the root data exposed as {@code .}; may be empty
+	 * @param missingKey the Go {@code missingkey} token — one of {@code error},
+	 * {@code zero}, {@code default} or {@code invalid}; {@code null}/blank leaves the
+	 * engine default (Go's {@code default}: absent keys render as {@code <no value>})
+	 * @return the rendered output
+	 * @throws IllegalArgumentException if {@code missingKey} is not a recognised token
+	 */
+	public String render(String templateText, Map<String, Object> context, String missingKey) {
+		GoTemplate template = new GoTemplate();
+		if (missingKey != null && !missingKey.isBlank()) {
+			template.option("missingkey=" + missingKey.trim().toLowerCase(Locale.ROOT));
+		}
+		return template.parse("template", templateText).render((context != null) ? context : Map.of());
 	}
 
 	/**
