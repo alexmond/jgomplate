@@ -36,7 +36,7 @@ class MissingKeyTest {
 	@Test
 	void blankModeLeavesEngineDefault() {
 		assertEquals("<no value>", this.engine.render("{{ .missing }}", CTX, ""));
-		assertEquals("<no value>", this.engine.render("{{ .missing }}", CTX, null));
+		assertEquals("<no value>", this.engine.render("{{ .missing }}", CTX, (String) null));
 	}
 
 	@Test

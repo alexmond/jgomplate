@@ -377,15 +377,15 @@ datasource, context, and directory machinery are follow-up work.
 | `--input-dir` / `--output-dir` | ✅ | Recursive directory render, mirroring structure. Also `--output-map` (`.in` = input path), `--chmod`, and `--include`/`--exclude`/`--exclude-processing` globs (platform `glob:` — a faithful subset of gomplate's doublestar).
 | `--exec-pipe`         | ⬜ | Not implemented.
 | `-t, --template`      | ✅ `-t/--template` | `name=URL` registered as a partial, invoked via `{{ template "name" . }}`. Local file schemes; also the `templates:` config key.
-| `--left-delim` / `--right-delim` | ⬜ | Custom delimiters not exposed (blocked on the engine).
+| `--left-delim` / `--right-delim` | ✅ | Custom action delimiters (via gotmpl4j 1.2.2 `delims`); also `$GOMPLATE_LEFT_DELIM`/`$GOMPLATE_RIGHT_DELIM` and the `leftDelim`/`rightDelim` config keys.
 | `--plugin`            | ⬜ | Config-file `plugins:` key parses; external-command execution not implemented.
 | `--missing-key`       | ✅ `--missing-key` | `error` (default, matching gomplate), `zero`, `default`, `invalid`; also the `missingKey:` config key.
 |===
 
 NOTE: The full gomplate config-file schema (all `Config` keys) is parsed into the shared
-`GomplateConfig` model today; keys whose behaviour is not yet wired (delimiters, plugins,
-post-exec) are accepted and ignored until their follow-up issue lands, so a gomplate
-`.gomplate.yaml` loads without error.
+`GomplateConfig` model today; keys whose behaviour is not yet wired (plugins, post-exec)
+are accepted and ignored until their follow-up issue lands, so a gomplate `.gomplate.yaml`
+loads without error.
 
 [#known-limitations]
 == Known engine limitations

@@ -32,4 +32,16 @@ class GomplateEngineTest {
 		assertEquals("[Hi alex]", out);
 	}
 
+	@Test
+	void rendersWithCustomDelimiters() {
+		RenderOptions options = new RenderOptions(null, null, null, "[[", "]]");
+		assertEquals("hi alex", engine.render("hi [[ .name ]]", Map.of("name", "alex"), options));
+	}
+
+	@Test
+	void customDelimitersLeaveDefaultBracesLiteral() {
+		RenderOptions options = new RenderOptions(null, null, null, "[[", "]]");
+		assertEquals("{{ .name }} = alex", engine.render("{{ .name }} = [[ .name ]]", Map.of("name", "alex"), options));
+	}
+
 }

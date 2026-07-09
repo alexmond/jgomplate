@@ -31,7 +31,7 @@ public class GomplateEngine {
 	 * @return the rendered output
 	 */
 	public String render(String templateText, Map<String, Object> context) {
-		return render(templateText, context, null);
+		return render(templateText, context, (String) null);
 	}
 
 	/**
@@ -82,21 +82,48 @@ public class GomplateEngine {
 	 */
 	public String render(String templateText, Map<String, Object> context, String missingKey,
 			Map<String, Function> extraFunctions, Map<String, String> partials) {
+		return render(templateText, context, new RenderOptions(missingKey, extraFunctions, partials, null, null));
+	}
+
+	/**
+	 * Render {@code templateText} with all per-render settings supplied via
+	 * {@link RenderOptions} — missing-key mode, extra functions, named partials, and
+	 * custom action delimiters.
+	 * @param templateText the main gomplate/Go template source
+	 * @param context the root data exposed as {@code .}; may be empty
+	 * @param options the per-render settings; {@code null} means all defaults
+	 * @return the rendered output
+	 * @throws IllegalArgumentException if the missing-key token is not recognised
+	 */
+	public String render(String templateText, Map<String, Object> context, RenderOptions options) {
+		RenderOptions opts = (options != null) ? options : RenderOptions.none();
 		GoTemplate.Builder builder = GoTemplate.builder();
-		if (missingKey != null && !missingKey.isBlank()) {
-			builder.option("missingkey=" + missingKey.trim().toLowerCase(Locale.ROOT));
+		if (opts.missingKey() != null && !opts.missingKey().isBlank()) {
+			builder.option("missingkey=" + opts.missingKey().trim().toLowerCase(Locale.ROOT));
 		}
-		if (extraFunctions != null && !extraFunctions.isEmpty()) {
-			builder.withFunctions(extraFunctions);
+		if (opts.functions() != null && !opts.functions().isEmpty()) {
+			builder.withFunctions(opts.functions());
+		}
+		if (hasDelims(opts)) {
+			builder.delims(delimOr(opts.leftDelim(), "{{"), delimOr(opts.rightDelim(), "}}"));
 		}
 		GoTemplate template = builder.build();
-		if (partials != null) {
-			for (Map.Entry<String, String> partial : partials.entrySet()) {
+		if (opts.partials() != null) {
+			for (Map.Entry<String, String> partial : opts.partials().entrySet()) {
 				template.parse(partial.getKey(), partial.getValue());
 			}
 		}
 		template.parse("template", templateText);
 		return template.render("template", (context != null) ? context : Map.of());
+	}
+
+	private static boolean hasDelims(RenderOptions opts) {
+		return (opts.leftDelim() != null && !opts.leftDelim().isBlank())
+				|| (opts.rightDelim() != null && !opts.rightDelim().isBlank());
+	}
+
+	private static String delimOr(String value, String fallback) {
+		return (value != null && !value.isBlank()) ? value : fallback;
 	}
 
 	/**
