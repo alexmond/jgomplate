@@ -15,8 +15,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import org.alexmond.gotmpl4j.Function;
-
 import org.alexmond.jgomplate.core.config.GomplateConfig;
 
 /**
@@ -49,12 +47,10 @@ public class DirectoryRenderer {
 	 * Render every eligible file under {@code config.inputDir}.
 	 * @param config the resolved configuration (must have {@code inputDir} set)
 	 * @param context the template root context
-	 * @param missingKey the missing-key mode
-	 * @param functions per-render datasource functions
-	 * @param partials named partial templates
+	 * @param options the per-render settings (missing-key, functions, partials,
+	 * delimiters)
 	 */
-	public void render(GomplateConfig config, Map<String, Object> context, String missingKey,
-			Map<String, Function> functions, Map<String, String> partials) {
+	public void render(GomplateConfig config, Map<String, Object> context, RenderOptions options) {
 		Path inputDir = Path.of(config.getInputDir());
 		if (!Files.isDirectory(inputDir)) {
 			throw new IllegalArgumentException("input dir is not a directory: " + config.getInputDir());
@@ -71,7 +67,7 @@ public class DirectoryRenderer {
 					continue;
 				}
 				boolean raw = matchesAny(relative, excludeProcessing);
-				process(config, context, missingKey, functions, partials, file, relative, raw);
+				process(config, context, options, file, relative, raw);
 			}
 		}
 		catch (IOException ex) {
@@ -79,21 +75,20 @@ public class DirectoryRenderer {
 		}
 	}
 
-	private void process(GomplateConfig config, Map<String, Object> context, String missingKey,
-			Map<String, Function> functions, Map<String, String> partials, Path file, Path relative, boolean raw) {
+	private void process(GomplateConfig config, Map<String, Object> context, RenderOptions options, Path file,
+			Path relative, boolean raw) {
 		String source = readFile(file);
-		String rendered = raw ? source : this.engine.render(source, context, missingKey, functions, partials);
-		Path output = outputPath(config, context, missingKey, functions, relative);
+		String rendered = raw ? source : this.engine.render(source, context, options);
+		Path output = outputPath(config, context, options, relative);
 		writeFile(output, rendered);
 		applyChmod(output, config.getChmod());
 	}
 
-	private Path outputPath(GomplateConfig config, Map<String, Object> context, String missingKey,
-			Map<String, Function> functions, Path relative) {
+	private Path outputPath(GomplateConfig config, Map<String, Object> context, RenderOptions options, Path relative) {
 		if (config.getOutputMap() != null && !config.getOutputMap().isBlank()) {
 			Map<String, Object> data = new HashMap<>(context);
 			data.put("in", relative.toString());
-			String mapped = this.engine.render(config.getOutputMap(), data, missingKey, functions).trim();
+			String mapped = this.engine.render(config.getOutputMap(), data, options).trim();
 			return Path.of(mapped);
 		}
 		String outputDir = (config.getOutputDir() != null) ? config.getOutputDir() : DEFAULT_OUTPUT_DIR;

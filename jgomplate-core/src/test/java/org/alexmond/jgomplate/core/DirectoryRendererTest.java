@@ -20,6 +20,8 @@ class DirectoryRendererTest {
 
 	private final DirectoryRenderer renderer = new DirectoryRenderer();
 
+	private static final RenderOptions OPTS = new RenderOptions("error", Map.of(), Map.of(), null, null);
+
 	private GomplateConfig config(Path in, Path out) {
 		GomplateConfig config = new GomplateConfig();
 		config.setInputDir(in.toString());
@@ -34,7 +36,7 @@ class DirectoryRendererTest {
 		Files.writeString(in.resolve("nested.txt"), "hi {{ \"b\" | upper }}");
 		Path out = base.resolve("out");
 
-		this.renderer.render(config(base.resolve("in"), out), Map.of(), "error", Map.of(), Map.of());
+		this.renderer.render(config(base.resolve("in"), out), Map.of(), OPTS);
 
 		assertEquals("A", Files.readString(out.resolve("top.txt")));
 		assertEquals("hi B", Files.readString(out.resolve("sub/nested.txt")));
@@ -49,7 +51,7 @@ class DirectoryRendererTest {
 		GomplateConfig config = config(in, out);
 		config.setExcludes(List.of("*.md"));
 
-		this.renderer.render(config, Map.of(), "error", Map.of(), Map.of());
+		this.renderer.render(config, Map.of(), OPTS);
 
 		assertTrue(Files.exists(out.resolve("keep.txt")));
 		assertFalse(Files.exists(out.resolve("skip.md")));
@@ -64,7 +66,7 @@ class DirectoryRendererTest {
 		GomplateConfig config = config(in, out);
 		config.setIncludes(List.of("*.txt"));
 
-		this.renderer.render(config, Map.of(), "error", Map.of(), Map.of());
+		this.renderer.render(config, Map.of(), OPTS);
 
 		assertTrue(Files.exists(out.resolve("a.txt")));
 		assertFalse(Files.exists(out.resolve("b.log")));
@@ -78,7 +80,7 @@ class DirectoryRendererTest {
 		GomplateConfig config = config(in, out);
 		config.setExcludeProcessing(List.of("*.tmpl"));
 
-		this.renderer.render(config, Map.of(), "error", Map.of(), Map.of());
+		this.renderer.render(config, Map.of(), OPTS);
 
 		assertEquals("{{ not_rendered }}", Files.readString(out.resolve("raw.tmpl")));
 	}
@@ -91,7 +93,7 @@ class DirectoryRendererTest {
 		config.setInputDir(in.toString());
 		config.setOutputMap(base.resolve("out").toString() + "/{{ .in }}.html");
 
-		this.renderer.render(config, Map.of(), "error", Map.of(), Map.of());
+		this.renderer.render(config, Map.of(), OPTS);
 
 		assertEquals("body", Files.readString(base.resolve("out/page.md.html")));
 	}
@@ -104,7 +106,7 @@ class DirectoryRendererTest {
 		GomplateConfig config = config(in, out);
 		config.setChmod("0640");
 
-		this.renderer.render(config, Map.of(), "error", Map.of(), Map.of());
+		this.renderer.render(config, Map.of(), OPTS);
 
 		Set<PosixFilePermission> perms = Files.getPosixFilePermissions(out.resolve("f.txt"));
 		assertTrue(perms.contains(PosixFilePermission.OWNER_READ));

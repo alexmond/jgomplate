@@ -28,9 +28,10 @@ import org.alexmond.jgomplate.core.datasource.TemplateResolver;
  * gomplate's {@code error}), {@code context} datasources bound to the template root, and
  * the {@code datasource}/{@code ds}/{@code include} functions over the configured
  * {@code datasources}, and named partial {@code templates} invokable via {@code {{
- * template "name" . }}}, and directory rendering ({@code inputDir} to {@code outputDir}/
- * {@code outputMap}) via {@link DirectoryRenderer}. Delimiters and post-exec are wired by
- * follow-up issues; unrelated config keys are accepted but ignored here.
+ * template "name" . }}}, custom action delimiters ({@code leftDelim}/{@code rightDelim}),
+ * and directory rendering ({@code inputDir} to {@code outputDir}/{@code outputMap}) via
+ * {@link DirectoryRenderer}. Plugins and post-exec are wired by follow-up issues;
+ * unrelated config keys are accepted but ignored here.
  */
 public class GomplateRunner {
 
@@ -75,14 +76,16 @@ public class GomplateRunner {
 		Map<String, Object> context = this.contextResolver.resolve(config.getContext());
 		Map<String, Function> functions = new DatasourceFunctions(config.getDatasources()).functions();
 		Map<String, String> partials = this.templateResolver.resolve(config.getTemplates());
+		RenderOptions options = new RenderOptions(missingKey, functions, partials, config.getLeftDelim(),
+				config.getRightDelim());
 
 		if (config.getInputDir() != null && !config.getInputDir().isBlank()) {
-			this.directoryRenderer.render(config, context, missingKey, functions, partials);
+			this.directoryRenderer.render(config, context, options);
 			return;
 		}
 
 		if (config.getIn() != null) {
-			String rendered = this.engine.render(config.getIn(), context, missingKey, functions, partials);
+			String rendered = this.engine.render(config.getIn(), context, options);
 			write(target(outputs, 0), rendered, stdout);
 			return;
 		}
@@ -100,8 +103,7 @@ public class GomplateRunner {
 			else {
 				templateText = readFile(Path.of(source));
 			}
-			write(target(outputs, i), this.engine.render(templateText, context, missingKey, functions, partials),
-					stdout);
+			write(target(outputs, i), this.engine.render(templateText, context, options), stdout);
 		}
 	}
 

@@ -73,6 +73,13 @@ public class RenderCommand implements Callable<Integer> {
 	@Option(names = { "--chmod" }, description = "Octal mode applied to written files (e.g. 0644).")
 	private String chmod;
 
+	@Option(names = { "--left-delim" }, description = "Left action delimiter (default: {{; env GOMPLATE_LEFT_DELIM).")
+	private String leftDelim;
+
+	@Option(names = { "--right-delim" },
+			description = "Right action delimiter (default: }}; env GOMPLATE_RIGHT_DELIM).")
+	private String rightDelim;
+
 	@Option(names = { "--exclude" }, description = "Glob of files to skip during --input-dir. Repeatable.")
 	private List<String> excludes;
 
@@ -132,7 +139,18 @@ public class RenderCommand implements Callable<Integer> {
 		cli.setExcludes(this.excludes);
 		cli.setIncludes(this.includes);
 		cli.setExcludeProcessing(this.excludeProcessing);
+		cli.setLeftDelim(delimiter(this.leftDelim, "GOMPLATE_LEFT_DELIM"));
+		cli.setRightDelim(delimiter(this.rightDelim, "GOMPLATE_RIGHT_DELIM"));
 		return cli;
+	}
+
+	/** A delimiter flag, falling back to its gomplate environment variable when unset. */
+	private static String delimiter(String flag, String envVar) {
+		if (flag != null) {
+			return flag;
+		}
+		String env = System.getenv(envVar);
+		return (env != null && !env.isBlank()) ? env : null;
 	}
 
 	/** Parse repeatable {@code alias=URL} arguments into the config's datasource map. */

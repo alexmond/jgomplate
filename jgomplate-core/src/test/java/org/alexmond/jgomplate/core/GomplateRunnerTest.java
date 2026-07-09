@@ -154,6 +154,20 @@ class GomplateRunnerTest {
 	}
 
 	@Test
+	void customDelimitersFromConfig() {
+		GomplateConfig config = new GomplateConfig();
+		config.setIn("hi [[ .missing | default \"there\" ]]");
+		config.setLeftDelim("[[");
+		config.setRightDelim("]]");
+		config.setMissingKey("default");
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+		this.runner.run(config, NO_STDIN, out);
+
+		assertEquals("hi there", out.toString(StandardCharsets.UTF_8));
+	}
+
+	@Test
 	void inputDirDelegatesToDirectoryRenderer(@TempDir Path base) throws Exception {
 		Path in = Files.createDirectories(base.resolve("in"));
 		Files.writeString(in.resolve("a.txt"), "{{ \"x\" | upper }}");

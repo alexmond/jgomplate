@@ -45,7 +45,7 @@
         <!-- gotmpl4j: the Go text/template engine + Sprig functions, consumed from
              Maven Central (https://github.com/alexmond/gotmpl4j). jgomplate layers the
              gomplate-specific function namespaces + datasources + CLI on top. -->
-        <gotmpl4j.version>1.2.1</gotmpl4j.version>
+        <gotmpl4j.version>1.2.2</gotmpl4j.version>
         <picocli.version>4.7.7</picocli.version>
         <!-- jBCrypt: self-contained (no transitive deps, no Spring) bcrypt for crypto.Bcrypt -->
         <jbcrypt.version>0.4</jbcrypt.version>
