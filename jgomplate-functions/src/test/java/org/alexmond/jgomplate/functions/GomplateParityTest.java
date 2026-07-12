@@ -689,6 +689,48 @@ class GomplateParityTest {
 
 	}
 
+	/** {@code regexp} namespace. Cases mirror gomplate's regexp/regexp_test.go. */
+	@Nested
+	class Regexp {
+
+		@ParameterizedTest
+		@CsvSource(delimiter = '|', value = {
+				// Find: leftmost match
+				"{{ regexp.Find \"[a-z]+\" \"foo bar baz\" }}       | foo",
+				// FindAll: 2-arg (all) and 3-arg (capped at n)
+				"{{ len (regexp.FindAll \"[a-z]+\" \"foo bar baz\") }}   | 3",
+				"{{ index (regexp.FindAll \"[a-z]+\" 2 \"foo bar baz\") 1 }} | bar",
+				"{{ len (regexp.FindAll \"[0-9]+\" \"abc\") }}          | 0",
+				// Match: partial match anywhere; anchors work
+				"{{ regexp.Match \"^[a-z]+$\" \"abc\" }}     | true",
+				"{{ regexp.Match \"^[a-z]+$\" \"abc1\" }} | false",
+				"{{ regexp.Match \"[0-9]\" \"a1b\" }}        | true",
+				// Replace: $-expansion; ${1} (braced numeric) is shimmed to Java's $1
+				"{{ regexp.Replace \"a(x*)b\" \"T\" \"-ab-axxb-\" }}    | -T-T-",
+				"{{ regexp.Replace \"a(x*)b\" \"$1\" \"-ab-axxb-\" }}   | --xx-",
+				"{{ regexp.Replace \"a(x*)b\" \"${1}W\" \"-ab-axxb-\" }} | -W-xxW-",
+				// ReplaceLiteral: no expansion, $1 is literal
+				"{{ regexp.ReplaceLiteral \"a(x*)b\" \"$1\" \"-ab-axxb-\" }} | -$1-$1-",
+				// Split: n<0 all, n>0 caps, n==0 empty
+				"{{ len (regexp.Split \"[ ]+\" \"foo  bar baz\") }}   | 3",
+				"{{ index (regexp.Split \",\" \"a,b,c\") 1 }} | b", "{{ len (regexp.Split \",\" 2 \"a,b,c\") }}   | 2",
+				"{{ index (regexp.Split \",\" 2 \"a,b,c\") 1 }} | b,c",
+				"{{ len (regexp.Split \",\" 0 \"a,b,c\") }}   | 0",
+				// QuoteMeta: Go's metacharacter set, not \\Q..\\E
+				"{{ regexp.QuoteMeta \"a.b\" }}   | a\\.b", "{{ regexp.QuoteMeta \"1+1=2\" }} | 1\\+1=2" })
+		void regexpFuncs(String template, String expected) {
+			assertEquals(expected, render(template));
+		}
+
+		@Test
+		void namedGroupReplaceViaRe2Syntax() {
+			// RE2 (?P<name>) is rewritten to Java (?<name>); ${name} refs work in both
+			assertEquals("bar foo", render(
+					"{{ regexp.Replace \"(?P<first>[a-z]+) (?P<last>[a-z]+)\" \"${last} ${first}\" \"foo bar\" }}"));
+		}
+
+	}
+
 	/** {@code test} namespace. Cases mirror gomplate's internal/funcs/test_test.go. */
 	@Nested
 	class TestNs {

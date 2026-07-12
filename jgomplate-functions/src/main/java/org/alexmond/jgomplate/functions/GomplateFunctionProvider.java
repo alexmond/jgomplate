@@ -14,6 +14,7 @@ import org.alexmond.jgomplate.functions.ns.DataNamespace;
 import org.alexmond.jgomplate.functions.ns.EnvNamespace;
 import org.alexmond.jgomplate.functions.ns.MathNamespace;
 import org.alexmond.jgomplate.functions.ns.PathNamespace;
+import org.alexmond.jgomplate.functions.ns.RegexpNamespace;
 import org.alexmond.jgomplate.functions.ns.StringsNamespace;
 import org.alexmond.jgomplate.functions.ns.TestNamespace;
 import org.alexmond.jgomplate.functions.ns.UuidNamespace;
@@ -57,6 +58,8 @@ public class GomplateFunctionProvider implements FunctionProvider {
 
 	private static final PathNamespace PATH = new PathNamespace();
 
+	private static final RegexpNamespace REGEXP = new RegexpNamespace();
+
 	private static final TestNamespace TEST = new TestNamespace();
 
 	@Override
@@ -73,6 +76,7 @@ public class GomplateFunctionProvider implements FunctionProvider {
 		functions.put("env", (args) -> ENV);
 		functions.put("path", (args) -> PATH);
 		functions.put("test", (args) -> TEST);
+		functions.put("regexp", (args) -> REGEXP);
 		return functions;
 	}
 
