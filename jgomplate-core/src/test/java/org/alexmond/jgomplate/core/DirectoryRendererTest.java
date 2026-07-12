@@ -1,5 +1,6 @@
 package org.alexmond.jgomplate.core;
 
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.io.TempDir;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import org.alexmond.jgomplate.core.config.GomplateConfig;
 
@@ -100,6 +102,8 @@ class DirectoryRendererTest {
 
 	@Test
 	void chmodAppliesMode(@TempDir Path base) throws Exception {
+		assumeTrue(FileSystems.getDefault().supportedFileAttributeViews().contains("posix"),
+				"chmod is a no-op on non-POSIX filesystems");
 		Path in = Files.createDirectories(base.resolve("in"));
 		Files.writeString(in.resolve("f.txt"), "x");
 		Path out = base.resolve("out");
