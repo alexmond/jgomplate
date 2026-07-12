@@ -154,6 +154,38 @@ class GomplateParityTest {
 			assertEquals("alice", render("{{ (conv.URL \"https://alice@example.com/p\").User }}"));
 		}
 
+		@ParameterizedTest
+		@CsvSource(delimiter = '|', value = {
+				// base-0 parsing: a leading 0 is octal, 0x is hex
+				"{{ conv.ToInt64 \"010\" }}     | 8", "{{ conv.ToInt \"010\" }}       | 8",
+				"{{ conv.ToInt64 \"0xFFFF\" }}  | 65535",
+				// gomplate strips thousands separators before parsing
+				"{{ conv.ToInt64 \"4,096\" }}   | 4096", "{{ conv.ToInt \"4,096\" }}     | 4096",
+				"{{ conv.ToInt64 \"-4,096.00\" }} | -4096", "{{ conv.ToFloat64 \"1,000.34\" }} | 1000.34",
+				// float strings truncate toward zero; bool → 0/1
+				"{{ conv.ToInt64 \"42.0\" }}    | 42", "{{ conv.ToInt64 \"3.5\" }}     | 3",
+				"{{ conv.ToInt64 false }}       | 0", "{{ conv.ToInt false }}         | 0" })
+		void numericSpecialForms(String template, String expected) {
+			assertEquals(expected, render(template));
+		}
+
+		@ParameterizedTest
+		@CsvSource(delimiter = '|', value = {
+				// a truthy value passes through Default unchanged
+				"{{ conv.Default \"D\" 1 }} | 1",
+				// bool and nested-list elements format through Join
+				"{{ conv.Join (list true false) \",\" }} | true,false",
+				// extra ToString scalars
+				"{{ conv.ToString \"\" }}   | ''", "{{ conv.ToString -127 }} | -127" })
+		void defaultJoinToStringExtra(String template, String expected) {
+			assertEquals(expected, render(template));
+		}
+
+		// NOTE: gomplate's conv.Default returns the default for any Go-template-falsy
+		// input (0, false, empty list/map), via template.IsTrue. jgomplate currently
+		// only falls back on "" / nil, so `conv.Default "D" 0` yields 0, not "D".
+		// Tracked as a parity gap (#23); add the truthiness vectors once it is fixed.
+
 	}
 
 	/**
@@ -264,6 +296,8 @@ class GomplateParityTest {
 		void squote() {
 			assertEquals("'foo'", render("{{ strings.Squote \"foo\" }}"));
 			assertEquals("'it''s'", render("{{ strings.Squote \"it's\" }}"));
+			assertEquals("''", render("{{ strings.Squote \"\" }}"));
+			assertEquals("'123.4'", render("{{ strings.Squote 123.4 }}"));
 		}
 
 		@Test
@@ -276,6 +310,28 @@ class GomplateParityTest {
 			assertEquals("The quick|brown fox", render("{{ strings.WordWrap 10 \"|\" \"The quick brown fox\" }}"));
 			// a word longer than the width is left intact (wrapLongWords = false)
 			assertEquals("a\nlongword\nb", render("{{ strings.WordWrap 4 \"a longword b\" }}"));
+		}
+
+		@ParameterizedTest
+		@CsvSource(delimiter = '|', value = {
+				// RuneCount counts code points, not UTF-16 units — emoji are 1 each
+				"{{ strings.RuneCount \"\" }}          | 0", "{{ strings.RuneCount \"foo\" \"bar\" }} | 6",
+				"{{ strings.RuneCount \"😂😂\" }}       | 2",
+				// Title: word-initials up, rest untouched; punctuation is a boundary
+				"{{ strings.Title \"foo\" }}           | Foo", "{{ strings.Title \"foo bar\" }}     | Foo Bar",
+				"{{ strings.Title \"foo,bar&baz\" }}   | Foo,Bar&Baz", "{{ strings.Title \"FOO\" }}         | FOO",
+				// Quote coerces non-strings and escapes embedded quotes (Squote cases,
+				// whose output is single-quote-wrapped, live in squote() — CsvSource's
+				// quote char is ' so they cannot be expressed as a row here)
+				"{{ strings.Quote \"\" }}              | \"\"",
+				// Trim edges: empty cutset is a no-op
+				"{{ strings.TrimLeft \"\" \"foo\" }}   | foo", "{{ strings.TrimRight \"\" \"foo\" }} | foo",
+				// Trunc: 0 → empty; length >= len → whole string
+				"{{ strings.Trunc 0 \"hello, world\" }}  | ''",
+				"{{ strings.Trunc 12 \"hello, world\" }} | hello, world",
+				"{{ strings.Trunc 42 \"hello, world\" }} | hello, world" })
+		void runeCountTitleQuoteTrimTruncExtra(String template, String expected) {
+			assertEquals(expected, render(template));
 		}
 
 	}
@@ -336,6 +392,41 @@ class GomplateParityTest {
 			assertEquals(expected, render(template));
 		}
 
+		@ParameterizedTest
+		@CsvSource(delimiter = '|', value = {
+				// predicates coerce strings: base-0 int, float, NaN
+				"{{ math.IsInt \"052\" }}   | true", "{{ math.IsInt \"0xff\" }}  | true",
+				"{{ math.IsInt \"-42\" }}   | true", "{{ math.IsInt true }}      | false",
+				"{{ math.IsFloat \"-3.14\" }} | true", "{{ math.IsFloat \"0.00\" }}  | true",
+				"{{ math.IsNum \"0xff\" }}    | true", "{{ math.IsNum \"\" }}        | false" })
+		void predicateCoercion(String template, String expected) {
+			assertEquals(expected, render(template));
+		}
+
+		@ParameterizedTest
+		@CsvSource(delimiter = '|', value = {
+				// Ceil toward +inf, Floor toward -inf, Round half away from zero —
+				// negatives
+				"{{ math.Ceil 42.1 }}  | 43", "{{ math.Ceil -1.9 }}  | -1", "{{ math.Floor 42.1 }} | 42",
+				"{{ math.Floor -1.9 }} | -2", "{{ math.Round -1.9 }} | -2", "{{ math.Round -3.5 }} | -4",
+				"{{ math.Round -4.5 }} | -5", "{{ math.Abs 3.14 }}   | 3.14", "{{ math.Abs -1.9 }}   | 1.9" })
+		void roundingNegatives(String template, String expected) {
+			assertEquals(expected, render(template));
+		}
+
+		@ParameterizedTest
+		@CsvSource(delimiter = '|', value = {
+				// reducers coerce string/hex/bool args
+				"{{ math.Max \"14\" \"0xff\" -5 }} | 255", "{{ math.Min \"14\" \"0xff\" -5 }} | -5",
+				"{{ math.Mul \"-5\" 5 }} | -25", "{{ math.Mul 14 \"2\" }} | 28",
+				// Seq single-arg counts 1→n (descending here); step never overshoots the
+				// end
+				"{{ range math.Seq 0 }}{{.}} {{end}}     | '1 0 '",
+				"{{ range math.Seq 0 5 2 }}{{.}} {{end}} | '0 2 4 '" })
+		void reducerCoercionAndSeqEdges(String template, String expected) {
+			assertEquals(expected, render(template));
+		}
+
 	}
 
 	/**
@@ -358,6 +449,18 @@ class GomplateParityTest {
 						// directly
 						"{{ base64.Encode (base64.DecodeBytes \"aGVsbG8=\") }} | aGVsbG8=" })
 		void base64(String template, String expected) {
+			assertEquals(expected, render(template));
+		}
+
+		@ParameterizedTest
+		@CsvSource(delimiter = '|', value = {
+				// RFC 4648 §10 padding ladder
+				"{{ base64.Encode \"f\" }}      | Zg==", "{{ base64.Encode \"fo\" }}     | Zm8=",
+				"{{ base64.Encode \"foo\" }}    | Zm9v", "{{ base64.Encode \"foob\" }}   | Zm9vYg==",
+				"{{ base64.Encode \"fooba\" }}  | Zm9vYmE=", "{{ base64.Encode \"foobar\" }} | Zm9vYmFy",
+				"{{ base64.Decode \"Zg==\" }}   | f", "{{ base64.Decode \"Zm8=\" }}   | fo",
+				"{{ base64.Decode \"Zm9vYg==\" }} | foob" })
+		void encodeLadder(String template, String expected) {
 			assertEquals(expected, render(template));
 		}
 
@@ -411,6 +514,31 @@ class GomplateParityTest {
 		void bcryptExplicitCostRoundTrips() {
 			String hash = render("{{ crypto.Bcrypt 6 \"secret\" }}");
 			assertTrue(hash.startsWith("$2a$06$"), hash);
+			assertTrue(BCrypt.checkpw("secret", hash), "hash must verify");
+		}
+
+		@ParameterizedTest
+		@CsvSource(delimiter = '|', value = {
+				// IEEE 802.11i test vectors, iter=4096, keylen in bytes → 2× hex chars
+				"{{ crypto.PBKDF2 \"password\" \"IEEE\" 4096 32 }} "
+						+ "| f42c6fc52df0ebef9ebb4b90b38a5f902e83fe1b135a70e23aed762e9710a12e",
+				"{{ crypto.PBKDF2 \"ThisIsAPassword\" \"ThisIsASSID\" 4096 32 }} "
+						+ "| 0dc0d6eb90555ed6419756b9a15ec3e3209b63df707dd508d14581f8982721af",
+				"{{ crypto.PBKDF2 \"password\" \"IEEE\" 4096 64 \"SHA512\" }} | c16f4cb6d03e23614399dee5e7f676fb1"
+						+ "da0eb9471b6a74a6c5bc934c6ec7d2ab7028fbb1000b1beb97f17646045d8144792352f6676d13b20a4c03754903d7e" })
+		void pbkdf2IEEE(String template, String expected) {
+			assertEquals(expected, render(template));
+		}
+
+		// NOTE: gomplate clamps a bcrypt cost < 4 up to the default cost (10) — Go's
+		// bcrypt.GenerateFromPassword silently substitutes DefaultCost. jgomplate's
+		// jBCrypt rejects cost < 4, so `crypto.Bcrypt 0 "secret"` yields <no value>.
+		// Tracked as a parity gap (#23); add the clamp vector once it is fixed.
+
+		@Test
+		void bcryptAcceptsMinimumCost() {
+			String hash = render("{{ crypto.Bcrypt 4 \"secret\" }}");
+			assertTrue(hash.startsWith("$2a$04$"), hash);
 			assertTrue(BCrypt.checkpw("secret", hash), "hash must verify");
 		}
 
@@ -659,6 +787,61 @@ class GomplateParityTest {
 			assertEquals("abc", render("{{ range coll.GoSlice (list \"a\" \"b\" \"c\") }}{{ . }}{{ end }}"));
 			// strings slice by character
 			assertEquals("el", render("{{ coll.GoSlice \"hello\" 1 3 }}"));
+		}
+
+		@ParameterizedTest
+		@CsvSource(delimiter = '|', value = {
+				// Sort a list of maps by a key (sort-key first, list last)
+				"{{ range coll.Sort \"name\" (list (dict \"name\" \"Bart\" \"age\" 12) "
+						+ "(dict \"name\" \"Maggie\" \"age\" 1) (dict \"name\" \"Lisa\" \"age\" 6)) }}{{ .name }} {{ end }} "
+						+ "| 'Bart Lisa Maggie '",
+				"{{ range coll.Sort \"age\" (list (dict \"name\" \"Bart\" \"age\" 12) "
+						+ "(dict \"name\" \"Maggie\" \"age\" 1) (dict \"name\" \"Lisa\" \"age\" 6)) }}{{ .name }} {{ end }} "
+						+ "| 'Maggie Lisa Bart '" })
+		void sortByKey(String template, String expected) {
+			assertEquals(expected, render(template));
+		}
+
+		@ParameterizedTest
+		@CsvSource(delimiter = '|', value = {
+				// coll.Omit filters a list too (values to drop first, list last)
+				"{{ range coll.Omit \"b\" (list \"a\" \"b\" \"c\") }}{{.}}{{end}}     | ac",
+				"{{ range coll.Omit \"b\" \"c\" (list \"a\" \"b\" \"c\") }}{{.}}{{end}} | a",
+				// empty-string key is a real key for Pick/Omit on maps
+				"{{ index (coll.Pick \"\" (dict \"foo\" \"bar\" \"\" \"baz\")) \"\" }}  | baz",
+				"{{ coll.Has (coll.Omit \"\" (dict \"foo\" \"bar\" \"\" \"baz\")) \"\" }} | false" })
+		void omitSliceAndEmptyKey(String template, String expected) {
+			assertEquals(expected, render(template));
+		}
+
+		@ParameterizedTest
+		@CsvSource(delimiter = '|', value = {
+				// Keys/Values over several maps: each map sorted by key, then
+				// concatenated
+				"{{ range coll.Keys (dict \"foo\" 1 \"bar\" 2) (dict \"baz\" 3 \"qux\" 4) }}{{.}} {{end}} "
+						+ "| 'bar foo baz qux '",
+				"{{ range coll.Values (dict \"foo\" 1 \"bar\" 2) (dict \"baz\" 3 \"qux\" 4) }}{{.}} {{end}} "
+						+ "| '2 1 3 4 '",
+				// Uniq is type-aware: 1 and \"1\" are distinct, true dedups
+				"{{ len (coll.Uniq (list 1 2 3 1 true false true \"1\" 2)) }} | 6" })
+		void keysValuesMultiMapAndUniq(String template, String expected) {
+			assertEquals(expected, render(template));
+		}
+
+		@ParameterizedTest
+		@CsvSource(delimiter = '|', value = {
+				// three-map merge: left-most (dst) wins per key; later maps only add new
+				// keys
+				"{{ index (coll.Merge (dict \"a\" 4 \"c\" 5) (dict \"a\" 1 \"b\" 2 \"c\" 3) "
+						+ "(dict \"a\" 1 \"b\" 2 \"c\" 3 \"d\" 4)) \"a\" }} | 4",
+				"{{ index (coll.Merge (dict \"a\" 4 \"c\" 5) (dict \"a\" 1 \"b\" 2 \"c\" 3) "
+						+ "(dict \"a\" 1 \"b\" 2 \"c\" 3 \"d\" 4)) \"c\" }} | 5",
+				"{{ index (coll.Merge (dict \"a\" 4 \"c\" 5) (dict \"a\" 1 \"b\" 2 \"c\" 3) "
+						+ "(dict \"a\" 1 \"b\" 2 \"c\" 3 \"d\" 4)) \"b\" }} | 2",
+				"{{ index (coll.Merge (dict \"a\" 4 \"c\" 5) (dict \"a\" 1 \"b\" 2 \"c\" 3) "
+						+ "(dict \"a\" 1 \"b\" 2 \"c\" 3 \"d\" 4)) \"d\" }} | 4" })
+		void mergeThreeMaps(String template, String expected) {
+			assertEquals(expected, render(template));
 		}
 
 	}
