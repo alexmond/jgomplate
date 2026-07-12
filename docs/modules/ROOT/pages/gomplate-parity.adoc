@@ -90,9 +90,13 @@ Status legend: ✅ complete · 🟡 partial (some methods) · ⬜ not started.
 | `V4 Nil IsValid Parse`. `Parse` accepts the standard, `urn:uuid:`, `{braces}`, and raw-hex forms. Only `V1` is missing — the JVM has no built-in time-based UUID generator.
 
 | `random`
-| ⬜ Not started
-| 0 / 6
-| `ASCII Alpha AlphaNum Number String Item`.
+| ✅ Complete
+| 5 / 5
+| `ASCII Alpha AlphaNum String Item` (gomplate's `random` namespace exposes these
+  five). Backed by `SecureRandom`, so output never matches gomplate byte-for-byte —
+  only length/charset/range do. Built-in classes are ASCII (Go's POSIX classes),
+  sets are graphic-filtered (Go `unicode.IsGraphic`), and `String` accepts a default
+  set, a regex-style set, or a lower/upper code-point range.
 
 | `env`
 | ✅ Complete

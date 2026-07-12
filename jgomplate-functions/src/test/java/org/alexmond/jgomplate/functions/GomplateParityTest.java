@@ -689,6 +689,42 @@ class GomplateParityTest {
 
 	}
 
+	/**
+	 * {@code random} namespace. Output is non-deterministic — assert shape, not bytes.
+	 */
+	@Nested
+	class Random {
+
+		@Test
+		void asciiAlphaAlphaNumShape() {
+			// gomplate ASCII = printable ASCII; Alpha/AlphaNum are ASCII (Go POSIX
+			// classes)
+			assertTrue(render("{{ random.ASCII 100 }}").matches("[\\x20-\\x7e]{100}"));
+			assertTrue(render("{{ random.Alpha 50 }}").matches("[A-Za-z]{50}"));
+			assertTrue(render("{{ random.AlphaNum 50 }}").matches("[A-Za-z0-9]{50}"));
+			// count 0 yields an empty string for the bounded generators
+			assertEquals("", render("{{ random.ASCII 0 }}"));
+		}
+
+		@Test
+		void stringDefaultAndSpecAndBounds() {
+			// default set is [a-zA-Z0-9_.-]
+			assertTrue(render("{{ random.String 40 }}").matches("[a-zA-Z0-9_.-]{40}"));
+			// a regex-style character set
+			assertTrue(render("{{ random.String 16 \"[a-f0-9]\" }}").matches("[a-f0-9]{16}"));
+			// a 1-wide code-point range is deterministic — only that char
+			assertEquals("aaaa", render("{{ random.String 4 \"a\" \"a\" }}"));
+		}
+
+		@Test
+		void itemPicksFromList() {
+			assertEquals("only", render("{{ random.Item (list \"only\") }}"));
+			String pick = render("{{ random.Item (list \"a\" \"b\" \"c\") }}");
+			assertTrue(pick.equals("a") || pick.equals("b") || pick.equals("c"), pick);
+		}
+
+	}
+
 	/** {@code regexp} namespace. Cases mirror gomplate's regexp/regexp_test.go. */
 	@Nested
 	class Regexp {
