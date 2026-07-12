@@ -99,6 +99,13 @@
         <exclude name="ConfusingArgumentToVarargsMethod"/> <!-- False positive on Object[] varargs lambdas -->
         <exclude name="ReplaceJavaUtilDate"/> <!-- DateFunctions mirrors Go's date handling which uses Date objects -->
     </rule>
+    <!-- Only the standard Java *Test/*Tests suffix marks a test class, so gomplate
+         namespace POJOs like TestNamespace are not mistaken for JUnit classes. -->
+    <rule ref="category/java/errorprone.xml/TestClassWithoutTestCases">
+        <properties>
+            <property name="testClassPattern" value="^(?:.*\.)?.*Tests?$"/>
+        </properties>
+    </rule>
 
     <!-- Multithreading -->
     <rule ref="category/java/multithreading.xml">

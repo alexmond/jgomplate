@@ -689,6 +689,56 @@ class GomplateParityTest {
 
 	}
 
+	/** {@code test} namespace. Cases mirror gomplate's internal/funcs/test_test.go. */
+	@Nested
+	class TestNs {
+
+		@ParameterizedTest
+		@CsvSource(delimiter = '|', value = {
+				// Ternary: condition is the LAST arg; ToBool decides
+				"{{ test.Ternary \"foo\" 42 false }} | 42", "{{ test.Ternary \"foo\" 42 \"yes\" }} | foo",
+				"{{ test.Ternary false true true }} | false",
+				// Kind: Java runtime types mapped to Go reflect-kind names (42.0
+				// collapses
+				// to int in the engine's number model, so a fractional float pins
+				// float64)
+				"{{ test.Kind \"foo\" }}      | string", "{{ test.Kind true }}         | bool",
+				"{{ test.Kind 42 }}           | int", "{{ test.Kind 3.14 }}         | float64",
+				"{{ test.Kind (list 1 2) }}   | slice", "{{ test.Kind (dict \"a\" 1) }} | map",
+				// IsKind: exact kinds plus the "number" pseudo-kind
+				"{{ test.IsKind \"number\" 42 }}   | true", "{{ test.IsKind \"number\" 3.14 }} | true",
+				"{{ test.IsKind \"number\" \"foo\" }} | false", "{{ test.IsKind \"string\" \"foo\" }} | true",
+				"{{ test.IsKind \"bool\" true }}   | true", "{{ test.IsKind \"int\" 42 }}      | true",
+				// Required passes through a set value — 0 is set, not empty
+				"{{ test.Required \"foo\" }} | foo", "{{ test.Required 0 }}       | 0",
+				// Assert on a truthy value renders nothing
+				"{{ test.Assert true }}     | ''", "{{ test.Assert \"msg\" true }} | ''" })
+		void testFuncs(String template, String expected) {
+			assertEquals(expected, render(template));
+		}
+
+		@Test
+		void kindOfNilIsInvalid() {
+			Map<String, Object> data = new HashMap<>();
+			data.put("n", null);
+			assertEquals("invalid", render("{{ test.Kind .n }}", data));
+		}
+
+		@Test
+		void requiredReturnsSetValue() {
+			// a present value passes through Required unchanged
+			assertEquals("prod", render("{{ test.Required \"env\" .env }}", Map.of("env", "prod")));
+		}
+
+		// NOTE: gomplate's test.Assert(false) / test.Fail / test.Required(unset) ABORT
+		// rendering with an error. gotmpl4j does not propagate a function's thrown
+		// exception — it renders <no value> instead — so these fail-the-template
+		// semantics
+		// are not yet observable here (same engine limitation as crypto.Bcrypt's error
+		// path). Tracked upstream in gotmpl4j; assert the abort behaviour once it lands.
+
+	}
+
 	/** {@code path} namespace. Cases mirror gomplate's internal/funcs/path_test.go. */
 	@Nested
 	class Path {
