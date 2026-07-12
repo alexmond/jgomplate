@@ -65,9 +65,15 @@ Status legend: ✅ complete · 🟡 partial (some methods) · ⬜ not started.
 | Full: `Abs Sub Div Rem Pow Ceil Floor Round IsInt IsFloat IsNum` plus the variadic `Add Mul Max Min Seq` (callable since gotmpl4j 1.2.1 unpacks varargs methods).
 
 | `time`
-| ⬜ Not started
-| 0 / ~15
-| `Now Parse ParseDuration Since Unix ZoneName …` plus the duration constants.
+| 🟡 Partial
+| 8 / ~15
+| The deterministic, offline subset: the duration constructors `Nanosecond
+  Microsecond Millisecond Second Minute Hour` (rendering in Go's
+  `Duration.String()` form — `1h30m0s`, `1.5s`, `1µs`), `ParseDuration`, and
+  `Parse` (whose result exposes `.Format`, translating Go reference-time layouts
+  like `2006-01-02 15:04:05` to Java `DateTimeFormatter` patterns). The
+  clock/zone-dependent functions (`Now`/`Since`/`Until`/`ZoneName`/`ZoneOffset`)
+  are omitted — their output is not reproducible.
 
 | `crypto`
 | 🟡 Partial
