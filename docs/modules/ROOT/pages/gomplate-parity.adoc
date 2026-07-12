@@ -123,9 +123,14 @@ Status legend: ✅ complete · 🟡 partial (some methods) · ⬜ not started.
 | The full go-sockaddr helper set.
 
 | `test`
-| ⬜ Not started
-| 0 / ~6
-| `Assert Fail Required Ternary IsKind Kind`.
+| 🟡 Partial
+| 6 / 6
+| `Ternary Assert Fail Required Kind IsKind`. `Ternary` (condition last),
+  `Required` pass-through, and `Kind`/`IsKind` (Java types → Go reflect-kind names,
+  plus the `number` pseudo-kind) work. `Assert`/`Fail`/`Required`'s *fail-the-render*
+  paths currently emit `<no value>` instead of aborting — gotmpl4j swallows a
+  function's thrown error (upstream gotmpl4j#137); Go-specific reflect widths
+  (`int64` vs `int`, `struct`, `uint`) are not mapped.
 
 | `tmpl`
 | ⬜ Not started
