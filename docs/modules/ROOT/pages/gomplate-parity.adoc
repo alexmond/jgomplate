@@ -75,9 +75,14 @@ Status legend: ✅ complete · 🟡 partial (some methods) · ⬜ not started.
 | The SHA hash digests `SHA1 SHA224 SHA256 SHA384 SHA512 SHA512_224 SHA512_256` (lowercase hex), plus `Bcrypt` and `PBKDF2`. Missing the RSA/ECDSA/AES helpers, `WPAPSK`, and the `*Bytes` digest variants.
 
 | `regexp`
-| ⬜ Not started
-| 0 / 7
-| `Find FindAll Match Replace ReplaceLiteral Split QuoteMeta`.
+| ✅ Complete
+| 7 / 7
+| `Find FindAll Match Replace ReplaceLiteral Split QuoteMeta`. Delegates to
+  `java.util.regex` with an RE2→Java shim: named groups `(?P<name>)`→`(?<name>)`,
+  braced numeric refs `${1}`→`$1`, a hand-rolled `QuoteMeta` (Go's metacharacter
+  set, not `\Q…\E`), and Go's `n` split-limit mapped to Java's. Common classes
+  (`[a-z]`, `\s`, `\w`) are dialect-identical. Go's greedy `$name` replacement
+  (e.g. `$1W` = group named `1W`) differs from Java — use the braced `${1}` form.
 
 | `uuid`
 | 🟡 Partial
