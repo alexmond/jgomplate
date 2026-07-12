@@ -122,9 +122,14 @@ Status legend: ✅ complete · 🟡 partial (some methods) · ⬜ not started.
   same operations portably.
 
 | `net`
-| ⬜ Not started
-| 0 / ~14
-| `LookupIP LookupSRV LookupTXT ParseIP CIDRHost CIDRNetmask …`.
+| 🟡 Partial
+| 7 / ~14
+| The pure, offline functions: `ParseAddr ParsePrefix ParseRange` and the CIDR
+  helpers `CIDRHost CIDRNetmask CIDRSubnets CIDRSubnetSizes` — faithful BigInteger
+  ports of gomplate's go-cidr math, with IPv4 + IPv6 (addresses render in Go's
+  RFC 5952 canonical form). gomplate gates the CIDR helpers behind `--experimental`;
+  jgomplate exposes them directly. The DNS lookups (`LookupIP`/`LookupSRV`/
+  `LookupTXT`/`LookupCNAME`) are omitted — they need a live resolver.
 
 | `sockaddr`
 | ⬜ Not started

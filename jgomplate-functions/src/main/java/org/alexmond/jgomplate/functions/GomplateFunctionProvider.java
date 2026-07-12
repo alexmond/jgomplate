@@ -13,6 +13,7 @@ import org.alexmond.jgomplate.functions.ns.CryptoNamespace;
 import org.alexmond.jgomplate.functions.ns.DataNamespace;
 import org.alexmond.jgomplate.functions.ns.EnvNamespace;
 import org.alexmond.jgomplate.functions.ns.MathNamespace;
+import org.alexmond.jgomplate.functions.ns.NetNamespace;
 import org.alexmond.jgomplate.functions.ns.PathNamespace;
 import org.alexmond.jgomplate.functions.ns.RandomNamespace;
 import org.alexmond.jgomplate.functions.ns.RegexpNamespace;
@@ -46,6 +47,8 @@ public class GomplateFunctionProvider implements FunctionProvider {
 	private static final CollNamespace COLL = new CollNamespace();
 
 	private static final MathNamespace MATH = new MathNamespace();
+
+	private static final NetNamespace NET = new NetNamespace();
 
 	private static final Base64Namespace BASE64 = new Base64Namespace();
 
@@ -81,6 +84,7 @@ public class GomplateFunctionProvider implements FunctionProvider {
 		functions.put("test", (args) -> TEST);
 		functions.put("regexp", (args) -> REGEXP);
 		functions.put("random", (args) -> RANDOM);
+		functions.put("net", (args) -> NET);
 		return functions;
 	}
 

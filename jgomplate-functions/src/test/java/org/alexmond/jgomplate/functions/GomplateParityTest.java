@@ -690,6 +690,42 @@ class GomplateParityTest {
 	}
 
 	/**
+	 * {@code net} namespace. Cases mirror gomplate's internal/funcs/net_test.go (CIDR
+	 * math).
+	 */
+	@Nested
+	class Net {
+
+		@ParameterizedTest
+		@CsvSource(delimiter = '|', value = {
+				// Parse* canonicalise (IPv6 in RFC 5952 compressed form)
+				"{{ net.ParseAddr \"2001:470:20::2\" }}          | 2001:470:20::2",
+				"{{ net.ParseAddr \"10.0.0.1\" }}                | 10.0.0.1",
+				"{{ net.ParsePrefix \"192.168.0.2/28\" }}        | 192.168.0.2/28",
+				"{{ net.ParseRange \"192.168.0.2-192.168.23.255\" }} | 192.168.0.2-192.168.23.255",
+				// CIDRHost: the nth address within a prefix (IPv4 and IPv6)
+				"{{ net.CIDRHost 16 \"10.12.127.0/20\" }}        | 10.12.112.16",
+				"{{ net.CIDRHost 268 \"10.12.127.0/20\" }}       | 10.12.113.12",
+				"{{ net.CIDRHost 34 \"fd00:fd12:3456:7890:00a2::/72\" }} | fd00:fd12:3456:7890::22",
+				// CIDRNetmask: the mask address for the prefix length
+				"{{ net.CIDRNetmask \"10.0.0.0/12\" }}           | 255.240.0.0",
+				"{{ net.CIDRNetmask \"fd00:fd12:3456:7890:00a2::/72\" }} | ffff:ffff:ffff:ffff:ff00::",
+				// CIDRSubnets: split into equal subnets (index into the list)
+				"{{ index (net.CIDRSubnets 2 \"10.0.0.0/16\") 0 }} | 10.0.0.0/18",
+				"{{ index (net.CIDRSubnets 2 \"10.0.0.0/16\") 1 }} | 10.0.64.0/18",
+				"{{ index (net.CIDRSubnets 2 \"10.0.0.0/16\") 3 }} | 10.0.192.0/18",
+				"{{ len (net.CIDRSubnets 2 \"10.0.0.0/16\") }}   | 4",
+				// CIDRSubnetSizes: pack subnets of varying sizes sequentially
+				"{{ index (net.CIDRSubnetSizes 4 4 8 4 \"10.1.0.0/16\") 0 }} | 10.1.0.0/20",
+				"{{ index (net.CIDRSubnetSizes 4 4 8 4 \"10.1.0.0/16\") 2 }} | 10.1.32.0/24",
+				"{{ index (net.CIDRSubnetSizes 4 4 8 4 \"10.1.0.0/16\") 3 }} | 10.1.48.0/20" })
+		void netFuncs(String template, String expected) {
+			assertEquals(expected, render(template));
+		}
+
+	}
+
+	/**
 	 * {@code random} namespace. Output is non-deterministic — assert shape, not bytes.
 	 */
 	@Nested
