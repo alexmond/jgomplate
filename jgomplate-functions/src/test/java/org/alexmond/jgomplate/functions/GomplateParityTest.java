@@ -730,12 +730,23 @@ class GomplateParityTest {
 			assertEquals("prod", render("{{ test.Required \"env\" .env }}", Map.of("env", "prod")));
 		}
 
-		// NOTE: gomplate's test.Assert(false) / test.Fail / test.Required(unset) ABORT
-		// rendering with an error. gotmpl4j does not propagate a function's thrown
-		// exception — it renders <no value> instead — so these fail-the-template
-		// semantics
-		// are not yet observable here (same engine limitation as crypto.Bcrypt's error
-		// path). Tracked upstream in gotmpl4j; assert the abort behaviour once it lands.
+		@Test
+		void failPathsCurrentlyRenderNoValue() {
+			// ENGINE GAP (gotmpl4j#137): gomplate ABORTS rendering on test.Assert(false),
+			// test.Fail, and test.Required(unset). gotmpl4j swallows the function's
+			// thrown
+			// error and renders <no value> instead (same limitation as crypto.Bcrypt's
+			// error path). This pins the CURRENT behaviour so the test flips to failing —
+			// a signal to restore the abort assertions — once #137 lands.
+			assertEquals("<no value>", render("{{ test.Assert false }}"));
+			assertEquals("<no value>", render("{{ test.Assert \"boom\" false }}"));
+			assertEquals("<no value>", render("{{ test.Fail }}"));
+			assertEquals("<no value>", render("{{ test.Fail \"nope\" }}"));
+			assertEquals("<no value>", render("{{ test.Required \"\" }}"));
+			Map<String, Object> data = new HashMap<>();
+			data.put("n", null);
+			assertEquals("<no value>", render("{{ test.Required \"need it\" .n }}", data));
+		}
 
 	}
 
