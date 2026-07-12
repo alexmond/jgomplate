@@ -13,6 +13,7 @@ import org.alexmond.jgomplate.functions.ns.CryptoNamespace;
 import org.alexmond.jgomplate.functions.ns.DataNamespace;
 import org.alexmond.jgomplate.functions.ns.EnvNamespace;
 import org.alexmond.jgomplate.functions.ns.MathNamespace;
+import org.alexmond.jgomplate.functions.ns.PathNamespace;
 import org.alexmond.jgomplate.functions.ns.StringsNamespace;
 import org.alexmond.jgomplate.functions.ns.UuidNamespace;
 
@@ -53,6 +54,8 @@ public class GomplateFunctionProvider implements FunctionProvider {
 
 	private static final EnvNamespace ENV = new EnvNamespace();
 
+	private static final PathNamespace PATH = new PathNamespace();
+
 	@Override
 	public Map<String, Function> getFunctions(GoTemplate template) {
 		Map<String, Function> functions = new HashMap<>();
@@ -65,6 +68,7 @@ public class GomplateFunctionProvider implements FunctionProvider {
 		functions.put("uuid", (args) -> UUID);
 		functions.put("data", (args) -> DATA);
 		functions.put("env", (args) -> ENV);
+		functions.put("path", (args) -> PATH);
 		return functions;
 	}
 
