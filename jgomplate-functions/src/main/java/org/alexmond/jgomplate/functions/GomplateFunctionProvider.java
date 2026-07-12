@@ -19,6 +19,7 @@ import org.alexmond.jgomplate.functions.ns.RandomNamespace;
 import org.alexmond.jgomplate.functions.ns.RegexpNamespace;
 import org.alexmond.jgomplate.functions.ns.StringsNamespace;
 import org.alexmond.jgomplate.functions.ns.TestNamespace;
+import org.alexmond.jgomplate.functions.ns.TimeNamespace;
 import org.alexmond.jgomplate.functions.ns.UuidNamespace;
 
 /**
@@ -68,6 +69,8 @@ public class GomplateFunctionProvider implements FunctionProvider {
 
 	private static final TestNamespace TEST = new TestNamespace();
 
+	private static final TimeNamespace TIME = new TimeNamespace();
+
 	@Override
 	public Map<String, Function> getFunctions(GoTemplate template) {
 		Map<String, Function> functions = new HashMap<>();
@@ -85,6 +88,7 @@ public class GomplateFunctionProvider implements FunctionProvider {
 		functions.put("regexp", (args) -> REGEXP);
 		functions.put("random", (args) -> RANDOM);
 		functions.put("net", (args) -> NET);
+		functions.put("time", (args) -> TIME);
 		return functions;
 	}
 

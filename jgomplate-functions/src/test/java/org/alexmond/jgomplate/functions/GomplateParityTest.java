@@ -690,6 +690,32 @@ class GomplateParityTest {
 	}
 
 	/**
+	 * {@code time} namespace — the deterministic duration + layout subset.
+	 */
+	@Nested
+	class Time {
+
+		@ParameterizedTest
+		@CsvSource(delimiter = '|', value = {
+				// duration constructors render in Go's Duration.String() form
+				"{{ time.Second 90 }}         | 1m30s", "{{ time.Minute 90 }}       | 1h30m0s",
+				"{{ time.Hour 1 }}            | 1h0m0s", "{{ time.Second 0 }}        | 0s",
+				"{{ time.Millisecond 1500 }}  | 1.5s", "{{ time.Millisecond 250 }} | 250ms",
+				"{{ time.Microsecond 1000 }}  | 1ms", "{{ time.Nanosecond 1000 }} | 1µs",
+				// ParseDuration round-trips through the same format
+				"{{ time.ParseDuration \"1h30m\" }} | 1h30m0s", "{{ time.ParseDuration \"1.5s\" }} | 1.5s",
+				"{{ time.ParseDuration \"500ms\" }} | 500ms",
+				// Parse a Go layout, then Format with another (translated to
+				// DateTimeFormatter)
+				"{{ (time.Parse \"2006-01-02\" \"2021-03-04\").Format \"2006/01/02\" }} | 2021/03/04",
+				"{{ (time.Parse \"2006-01-02 15:04:05\" \"2021-03-04 08:05:00\").Format \"15:04\" }} | 08:05" })
+		void timeFuncs(String template, String expected) {
+			assertEquals(expected, render(template));
+		}
+
+	}
+
+	/**
 	 * {@code net} namespace. Cases mirror gomplate's internal/funcs/net_test.go (CIDR
 	 * math).
 	 */
