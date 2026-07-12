@@ -689,6 +689,34 @@ class GomplateParityTest {
 
 	}
 
+	/** {@code path} namespace. Cases mirror gomplate's internal/funcs/path_test.go. */
+	@Nested
+	class Path {
+
+		@ParameterizedTest
+		@CsvSource(delimiter = '|', value = {
+				// pure, slash-separated (Go path package) — OS-independent
+				"{{ path.Base \"foo/bar\" }}                 | bar", "{{ path.Base \"/foo/bar\" }} | bar",
+				"{{ path.Clean \"/foo/bar/../baz\" }}        | /foo/baz",
+				"{{ path.Dir \"foo/bar\" }}                  | foo", "{{ path.Ext \"/foo/bar/baz.txt\" }} | .txt",
+				"{{ path.IsAbs \"foo/bar\" }}                | false", "{{ path.IsAbs \"/foo/bar\" }} | true",
+				"{{ path.Join \"foo\" \"bar\" \"baz\" \"..\" \"qux\" }} | foo/bar/qux",
+				"{{ path.Match \"*.txt\" \"foo.json\" }}     | false", "{{ path.Match \"*.txt\" \"foo.txt\" }} | true",
+				// Split returns [dir, file]; dir keeps the trailing slash
+				"{{ index (path.Split \"/foo/bar/baz\") 0 }} | /foo/bar/",
+				"{{ index (path.Split \"/foo/bar/baz\") 1 }} | baz",
+				// extra Match cases: ? matches one non-slash char, [] a class, * stops at
+				// /
+				"{{ path.Match \"foo?bar\" \"fooxbar\" }}    | true",
+				"{{ path.Match \"foo?bar\" \"foo/bar\" }} | false",
+				"{{ path.Match \"[a-c]oo\" \"boo\" }}        | true",
+				"{{ path.Match \"*.txt\" \"a/b.txt\" }} | false" })
+		void pathFuncs(String template, String expected) {
+			assertEquals(expected, render(template));
+		}
+
+	}
+
 	/** {@code coll} namespace. Cases mirror gomplate's coll/coll_test.go. */
 	@Nested
 	class Coll {

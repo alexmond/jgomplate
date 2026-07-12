@@ -99,10 +99,18 @@ Status legend: ✅ complete · 🟡 partial (some methods) · ⬜ not started.
 | 0 / 7
 | `Exists IsDir Read ReadDir Stat Walk Write`.
 
-| `path` / `filepath`
+| `path`
+| ✅ Complete
+| 8 / 8
+| `Base Clean Dir Ext IsAbs Join Match Split` — faithful ports of Go's `path`
+  package (pure, forward-slash, OS-independent), including a full `path.Match`
+  shell-glob port (`*` stops at `/`, `?`, `[a-z]`/`[^…]` classes, `\` escaping).
+
+| `filepath`
 | ⬜ Not started
 | 0 / ~12
-| `Base Dir Ext Clean Join Split Match IsAbs …`.
+| `Base Dir Ext Clean Join Split Match IsAbs …` — OS-specific; `path` covers the
+  same operations portably.
 
 | `net`
 | ⬜ Not started
